@@ -2,6 +2,7 @@
   "name": "zonvo",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.3",
   "description": "Zonvo — Enterprise Semi-Live Webinar Platform",
   "workspaces": [
     "apps/*",
