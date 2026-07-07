@@ -35,7 +35,7 @@ export default function SettingsPage() {
               key={idx}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors ${
                 item.active
-                  ? 'bg-violet-600 text-white'
+                  ? 'bg-[#1d6fe8] text-white'
                   : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground'
               }`}
             >
@@ -49,7 +49,7 @@ export default function SettingsPage() {
         <div className="md:col-span-2 space-y-6">
           {/* Profile Card */}
           <div className="bg-white shadow-sm border border-slate-200 rounded-2xl p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide border-b border-white/[0.05] pb-2">
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide border-b border-slate-200 pb-2">
               Profile details
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -66,11 +66,11 @@ export default function SettingsPage() {
 
           {/* R2 Storage Configuration Panel */}
           <div className="bg-white shadow-sm border border-slate-200 rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                 Cloudflare R2 Integrations
               </h3>
-              <span className="flex items-center gap-1 text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-lg">
+              <span className="flex items-center gap-1 text-[10px] bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold px-2 py-0.5 rounded-lg">
                 <CheckCircle2 className="w-3 h-3" />
                 Operational
               </span>
@@ -90,7 +90,7 @@ export default function SettingsPage() {
 
               <div className="space-y-1">
                 <span className="text-muted-foreground block">Custom Domain Endpoint</span>
-                <div className="flex items-center gap-2 bg-black/20 border border-slate-200 rounded-xl px-3 py-2 mt-1">
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 mt-1">
                   <span className="font-mono text-foreground flex-1 truncate">
                     https://webinar.siteboard.in
                   </span>
@@ -104,7 +104,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="border border-dashed border-slate-200 rounded-xl p-3 bg-white/[0.01] text-[11px] text-muted-foreground leading-relaxed">
+              <div className="border border-dashed border-slate-200 rounded-xl p-3 bg-slate-50 text-[11px] text-muted-foreground leading-relaxed">
                 📢 Presigned URLs for direct client upload to Cloudflare R2 are configured dynamically. CORS policy permissions verified.
               </div>
             </div>

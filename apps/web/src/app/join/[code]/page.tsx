@@ -9,21 +9,21 @@ const DEFAULT_WAITING_THUMBNAIL = 'data:image/svg+xml,' + encodeURIComponent(`
 <svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0d0d1a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1a0d2e;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#f8fafc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1" />
     </linearGradient>
     <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:0.3" />
-      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:0" />
+      <stop offset="0%" style="stop-color:#1d6fe8;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#1d6fe8;stop-opacity:0" />
     </radialGradient>
   </defs>
   <rect width="800" height="450" fill="url(#bg)"/>
   <ellipse cx="400" cy="225" rx="300" ry="200" fill="url(#glow)"/>
-  <circle cx="400" cy="180" r="50" fill="none" stroke="#7c3aed" stroke-width="2" opacity="0.5"/>
-  <circle cx="400" cy="180" r="35" fill="none" stroke="#7c3aed" stroke-width="1.5" opacity="0.7"/>
-  <circle cx="400" cy="180" r="20" fill="#7c3aed" opacity="0.8"/>
-  <text x="400" y="270" font-family="system-ui, sans-serif" font-size="22" font-weight="600" fill="white" text-anchor="middle" opacity="0.9">Starting Soon</text>
-  <text x="400" y="300" font-family="system-ui, sans-serif" font-size="14" fill="white" text-anchor="middle" opacity="0.4">The session is about to begin. Please wait.</text>
+  <circle cx="400" cy="180" r="50" fill="none" stroke="#1d6fe8" stroke-width="2" opacity="0.5"/>
+  <circle cx="400" cy="180" r="35" fill="none" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+  <circle cx="400" cy="180" r="20" fill="#1d6fe8" opacity="0.8"/>
+  <text x="400" y="270" font-family="system-ui, sans-serif" font-size="22" font-weight="600" fill="#0f172a" text-anchor="middle" opacity="0.9">Starting Soon</text>
+  <text x="400" y="300" font-family="system-ui, sans-serif" font-size="14" fill="#0f172a" text-anchor="middle" opacity="0.4">The session is about to begin. Please wait.</text>
 </svg>`);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -241,8 +241,8 @@ export default function JoinPage({
     return (
       <Shell>
         <div className="flex flex-col items-center gap-4 py-12">
-          <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-white/40 text-sm">Looking up webinar<Dots /></p>
+          <div className="w-10 h-10 border-2 border-[#1d6fe8] border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground text-sm">Looking up webinar<Dots /></p>
         </div>
       </Shell>
     );
@@ -253,9 +253,9 @@ export default function JoinPage({
       <Shell>
         <div className="text-center py-12">
           <div className="text-5xl mb-4">🔍</div>
-          <h2 className="text-xl font-bold text-white mb-2">Webinar Not Found</h2>
-          <p className="text-white/40 text-sm">
-            Code <span className="font-mono font-bold text-white">{normalCode}</span> doesn&apos;t match any webinar.
+          <h2 className="text-xl font-bold text-foreground mb-2">Webinar Not Found</h2>
+          <p className="text-muted-foreground text-sm">
+            Code <span className="font-mono font-bold text-foreground">{normalCode}</span> doesn&apos;t match any webinar.
           </p>
         </div>
       </Shell>
@@ -267,8 +267,8 @@ export default function JoinPage({
       <Shell webinar={webinar}>
         <div className="text-center py-8">
           <div className="text-5xl mb-4">⏹</div>
-          <h2 className="text-xl font-bold text-white mb-2">Session Ended</h2>
-          <p className="text-white/40 text-sm">This webinar has already ended. A replay may be available soon.</p>
+          <h2 className="text-xl font-bold text-foreground mb-2">Session Ended</h2>
+          <p className="text-muted-foreground text-sm">This webinar has already ended. A replay may be available soon.</p>
         </div>
       </Shell>
     );
@@ -279,8 +279,8 @@ export default function JoinPage({
       <Shell webinar={webinar}>
         <div className="text-center py-8">
           <div className="text-5xl mb-4">🚫</div>
-          <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
-          <p className="text-white/40 text-sm">The host has not admitted you to this session.</p>
+          <h2 className="text-xl font-bold text-foreground mb-2">Access Denied</h2>
+          <p className="text-muted-foreground text-sm">The host has not admitted you to this session.</p>
         </div>
       </Shell>
     );
@@ -291,7 +291,7 @@ export default function JoinPage({
     return (
       <Shell webinar={webinar} fullWidth>
         {/* Thumbnail banner */}
-        <div className="relative w-full aspect-video rounded-2xl overflow-hidden mb-6 bg-[#0d0d1a] border border-white/[0.06]">
+        <div className="relative w-full aspect-video rounded-2xl overflow-hidden mb-6 bg-slate-50 border border-slate-200">
           <img
             src={thumbnailUrl}
             alt="Waiting room"
@@ -312,14 +312,14 @@ export default function JoinPage({
           // Submitted — polling
           <div className="text-center py-4">
             <div className="relative w-16 h-16 mx-auto mb-4">
-              <div className="absolute inset-0 rounded-full bg-violet-500/10 animate-ping" style={{ animationDuration: '2s' }} />
-              <div className="relative w-full h-full rounded-full bg-[#0d0d14] border border-violet-500/20 flex items-center justify-center text-2xl">⏳</div>
+              <div className="absolute inset-0 rounded-full bg-[#1d6fe8]/10 animate-ping" style={{ animationDuration: '2s' }} />
+              <div className="relative w-full h-full rounded-full bg-white border border-[#1d6fe8]/20 flex items-center justify-center text-2xl">⏳</div>
             </div>
-            <h2 className="text-white font-bold text-base mb-1">Waiting for Host Approval</h2>
-            <p className="text-white/40 text-sm mb-4">
-              Hi <span className="text-white">{displayName}</span>, the host will admit you shortly<Dots />
+            <h2 className="text-foreground font-bold text-base mb-1">Waiting for Host Approval</h2>
+            <p className="text-muted-foreground text-sm mb-4">
+              Hi <span className="text-foreground">{displayName}</span>, the host will admit you shortly<Dots />
             </p>
-            <div className="flex items-center justify-center gap-2 text-xs text-white/30">
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <span className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse inline-block" />
               Checking every 3 seconds
             </div>
@@ -327,22 +327,22 @@ export default function JoinPage({
         ) : (
           // Form
           <form onSubmit={(e) => void handleWaitingRoomSubmit(e)} className="space-y-3">
-            <h2 className="text-white font-semibold text-center mb-1">Request to Join</h2>
-            <p className="text-white/40 text-sm text-center mb-4">The host uses a Waiting Room — fill in your details</p>
+            <h2 className="text-foreground font-semibold text-center mb-1">Request to Join</h2>
+            <p className="text-muted-foreground text-sm text-center mb-4">The host uses a Waiting Room — fill in your details</p>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your full name *"
               required
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all"
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-foreground placeholder-slate-400 focus:outline-none focus:border-[#1d6fe8]/50 transition-all"
             />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email (optional)"
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all"
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-foreground placeholder-slate-400 focus:outline-none focus:border-[#1d6fe8]/50 transition-all"
             />
             {webinar?.hasPassword && (
               <input
@@ -351,7 +351,7 @@ export default function JoinPage({
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Webinar password 🔒"
                 required
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all"
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-foreground placeholder-slate-400 focus:outline-none focus:border-[#1d6fe8]/50 transition-all"
               />
             )}
             {formError && (
@@ -362,7 +362,7 @@ export default function JoinPage({
             <button
               type="submit"
               disabled={!displayName.trim()}
-              className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/20"
+              className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#1d6fe8] to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/20 text-white"
             >
               🚪 Request Admission
             </button>
@@ -377,7 +377,7 @@ export default function JoinPage({
     return (
       <Shell webinar={webinar} fullWidth>
         {/* Thumbnail banner for "not started yet" */}
-        <div className="relative w-full aspect-video rounded-2xl overflow-hidden mb-6 bg-[#0d0d1a] border border-white/[0.06]">
+        <div className="relative w-full aspect-video rounded-2xl overflow-hidden mb-6 bg-slate-50 border border-slate-200">
           <img
             src={thumbnailUrl}
             alt="Starting soon"
@@ -397,31 +397,31 @@ export default function JoinPage({
 
         <div className="text-center">
           <div className="relative w-20 h-20 mx-auto mb-5">
-            <div className="absolute inset-0 rounded-full bg-violet-500/10 animate-ping" style={{ animationDuration: '2s' }} />
-            <div className="absolute inset-2 rounded-full bg-violet-500/15 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.3s' }} />
-            <div className="relative w-full h-full rounded-full bg-[#0d0d14] border border-violet-500/20 flex items-center justify-center text-3xl">⏳</div>
+            <div className="absolute inset-0 rounded-full bg-[#1d6fe8]/10 animate-ping" style={{ animationDuration: '2s' }} />
+            <div className="absolute inset-2 rounded-full bg-[#1d6fe8]/15 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.3s' }} />
+            <div className="relative w-full h-full rounded-full bg-white border border-[#1d6fe8]/20 flex items-center justify-center text-3xl">⏳</div>
           </div>
 
-          <h2 className="text-xl font-bold text-white mb-2">Waiting for Host</h2>
-          <p className="text-white/50 text-sm mb-5 leading-relaxed">
+          <h2 className="text-xl font-bold text-foreground mb-2">Waiting for Host</h2>
+          <p className="text-muted-foreground text-sm mb-5 leading-relaxed">
             The host hasn&apos;t started the session yet.<br />
             This page will automatically update when the webinar goes live.
           </p>
 
           {webinar?.scheduledAt && (
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 mb-5 text-sm">
-              <p className="text-white/30 text-xs mb-1">Scheduled for</p>
-              <p className="text-white/70"><ClientDate iso={webinar.scheduledAt} /></p>
+            <div className="bg-white shadow-sm border border-slate-200 rounded-xl p-3 mb-5 text-sm">
+              <p className="text-muted-foreground text-xs mb-1">Scheduled for</p>
+              <p className="text-foreground"><ClientDate iso={webinar.scheduledAt} /></p>
             </div>
           )}
 
-          <p className="text-white/40 text-xs mb-2 text-center">Enter your name now so you&apos;re ready to join instantly</p>
+          <p className="text-muted-foreground text-xs mb-2 text-center">Enter your name now so you&apos;re ready to join instantly</p>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Your name"
-            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all text-center"
+            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-foreground placeholder-slate-400 focus:outline-none focus:border-[#1d6fe8]/50 transition-all text-center"
           />
           {webinar?.hasPassword && (
             <input
@@ -429,10 +429,10 @@ export default function JoinPage({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Webinar password 🔒"
-              className="w-full mt-2 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all text-center"
+              className="w-full mt-2 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-foreground placeholder-slate-400 focus:outline-none focus:border-[#1d6fe8]/50 transition-all text-center"
             />
           )}
-          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-white/30">
+          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-white/20 animate-pulse inline-block" />
             Checking every 5 seconds<Dots />
           </div>
@@ -451,8 +451,8 @@ export default function JoinPage({
             <div className="w-16 h-16 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin" />
           </div>
           <div>
-            <p className="text-white font-bold text-lg">Joining as {prefilledName}</p>
-            <p className="text-white/40 text-sm mt-1">Connecting you to the live session…</p>
+            <p className="text-foreground font-bold text-lg">Joining as {prefilledName}</p>
+            <p className="text-muted-foreground text-sm mt-1">Connecting you to the live session…</p>
           </div>
         </div>
       ) : (
@@ -464,10 +464,10 @@ export default function JoinPage({
             </div>
           </div>
 
-          <h2 className="text-center text-white font-semibold mb-1">
+          <h2 className="text-center text-foreground font-semibold mb-1">
             {pageState === 'joining' ? 'Joining…' : 'Join Live Session'}
           </h2>
-          <p className="text-center text-white/40 text-sm mb-5">
+          <p className="text-center text-muted-foreground text-sm mb-5">
             {prefilledName ? `Welcome back, ${prefilledName}! Click below to join.` : 'Enter your name to join now'}
           </p>
 
@@ -479,7 +479,7 @@ export default function JoinPage({
               placeholder="Your full name *"
               required
               disabled={pageState === 'joining'}
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all disabled:opacity-50"
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-foreground placeholder-slate-400 focus:outline-none focus:border-[#1d6fe8]/50 transition-all disabled:opacity-50"
             />
 
             {webinar?.hasPassword && (
@@ -490,7 +490,7 @@ export default function JoinPage({
                 placeholder="Webinar password 🔒"
                 required
                 disabled={pageState === 'joining'}
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-all disabled:opacity-50"
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-foreground placeholder-slate-400 focus:outline-none focus:border-[#1d6fe8]/50 transition-all disabled:opacity-50"
               />
             )}
 
@@ -503,7 +503,7 @@ export default function JoinPage({
             <button
               type="submit"
               disabled={pageState === 'joining' || !displayName.trim()}
-              className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/20"
+              className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/20 text-white"
             >
               {pageState === 'joining' ? (
                 <span className="flex items-center justify-center gap-2">
@@ -524,31 +524,31 @@ export default function JoinPage({
 // ─── Shell wrapper ─────────────────────────────────────────────────────────────
 function Shell({ children, webinar, fullWidth }: { children: React.ReactNode; webinar?: PublicWebinar | null; fullWidth?: boolean }) {
   return (
-    <div className="min-h-screen bg-[#08080f] flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-8">
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-violet-600/8 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#1d6fe8]/10 rounded-full blur-3xl" />
       </div>
 
       <div className={`relative w-full ${fullWidth ? 'max-w-lg' : 'max-w-md'}`}>
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-8 h-8 rounded-xl bg-[#1d6fe8] flex items-center justify-center">
+            <svg className="w-4 h-4 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <span className="text-white font-bold text-lg">Zonvo</span>
+          <span className="text-foreground font-bold text-lg">Zonvo</span>
         </div>
 
         {/* Webinar info header */}
         {webinar && !fullWidth && (
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 mb-4">
-            <p className="text-white/30 text-xs mb-1 font-mono">#{webinar.joinCode}</p>
-            <h1 className="text-white font-bold text-base leading-tight">{webinar.title}</h1>
+          <div className="bg-white shadow-sm border border-slate-200 rounded-2xl p-4 mb-4">
+            <p className="text-muted-foreground text-xs mb-1 font-mono">#{webinar.joinCode}</p>
+            <h1 className="text-foreground font-bold text-base leading-tight">{webinar.title}</h1>
             {webinar.description && (
-              <p className="text-white/40 text-xs mt-1 line-clamp-2">{webinar.description}</p>
+              <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{webinar.description}</p>
             )}
-            <div className="flex items-center gap-3 mt-2 text-xs text-white/30">
+            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
               <span>⏱ {webinar.durationMinutes} min</span>
               <span>👥 {webinar.maxAttendees.toLocaleString()} max</span>
               {webinar.hasPassword && <span>🔒 Password protected</span>}
@@ -558,12 +558,12 @@ function Shell({ children, webinar, fullWidth }: { children: React.ReactNode; we
         )}
 
         {/* Main card */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+        <div className="bg-white shadow-sm border border-slate-200 rounded-2xl p-6">
           {children}
         </div>
 
-        <p className="text-center text-white/15 text-xs mt-4">
-          Powered by <span className="text-violet-400/40">Zonvo</span>
+        <p className="text-center text-muted-foreground text-xs mt-4">
+          Powered by <span className="text-blue-600/60">Zonvo</span>
         </p>
       </div>
     </div>

@@ -197,6 +197,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    if (!user.emailVerifiedAt) {
+      throw new ForbiddenException('Please verify your email address to log in.');
+    }
+
+
     // Load user roles and permissions
     const { roles, permissions } = await this.getUserRolesAndPermissions(user.id);
 

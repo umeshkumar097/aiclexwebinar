@@ -51,7 +51,7 @@ export default function ForgotPasswordPage(): React.ReactElement {
         >
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-            style={{ background: 'rgba(82, 113, 255, 0.1)', border: '2px solid rgba(82, 113, 255, 0.25)' }}
+            style={{ background: 'rgba(29, 111, 232, 0.1)', border: '2px solid rgba(29, 111, 232, 0.25)' }}
           >
             <MailCheck className="w-8 h-8 text-primary" />
           </div>
@@ -86,7 +86,7 @@ export default function ForgotPasswordPage(): React.ReactElement {
         <div className="flex items-center gap-2.5 justify-center">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
-            style={{ background: 'linear-gradient(135deg, #5271ff, #ff914d)' }}
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #d4af37)' }}
           >
             <Zap className="w-5 h-5 text-white" fill="white" />
           </div>
@@ -142,7 +142,7 @@ export default function ForgotPasswordPage(): React.ReactElement {
               id="forgot-password-submit"
               disabled={isSubmitting}
               className="w-full py-3 rounded-xl font-bold text-sm text-white disabled:opacity-60 btn-glow flex items-center justify-center gap-2 shadow-md"
-              style={{ background: 'linear-gradient(135deg, #5271ff, #5271ff)' }}
+              style={{ background: 'linear-gradient(135deg, #1d6fe8, #1d6fe8)' }}
             >
               {isSubmitting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" />Sending…</>

@@ -102,7 +102,7 @@ export default function RegisterPage(): React.ReactElement {
             id="go-to-login"
             onClick={() => router.push('/login')}
             className="w-full py-3 rounded-xl font-bold text-sm text-white btn-glow shadow-md"
-            style={{ background: 'linear-gradient(135deg, #5271ff, #5271ff)' }}
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #1d6fe8)' }}
           >
             Go to Login
           </button>
@@ -123,7 +123,7 @@ export default function RegisterPage(): React.ReactElement {
         >
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
-            style={{ background: 'linear-gradient(135deg, #5271ff, #ff914d)' }}
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #d4af37)' }}
           >
             <Zap className="w-5 h-5 text-white" fill="white" />
           </div>
@@ -343,8 +343,8 @@ export default function RegisterPage(): React.ReactElement {
               className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed btn-glow flex items-center justify-center gap-2 shadow-md"
               style={{
                 background: isSubmitting
-                  ? '#5271ff'
-                  : 'linear-gradient(135deg, #5271ff, #5271ff)',
+                  ? '#1d6fe8'
+                  : 'linear-gradient(135deg, #1d6fe8, #1d6fe8)',
               }}
             >
               {isSubmitting ? (

@@ -170,8 +170,8 @@ function StepIndicator({ current }: { current: Step }) {
       {STEPS.map((step, i) => (
         <div key={step.num} className="flex items-center gap-2">
           <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold transition-all duration-300 ${
-            step.num < current ? 'bg-violet-600 text-white' :
-            step.num === current ? 'bg-violet-600 text-foreground ring-4 ring-violet-500/20' :
+            step.num < current ? 'bg-[#1d6fe8] text-white' :
+            step.num === current ? 'bg-[#1d6fe8] text-white ring-4 ring-blue-500/20' :
             'bg-slate-100 text-muted-foreground'
           }`}>
             {step.num < current ? (
@@ -184,7 +184,7 @@ function StepIndicator({ current }: { current: Step }) {
             {step.label}
           </span>
           {i < STEPS.length - 1 && (
-            <div className={`w-12 h-px mx-1 transition-colors ${step.num < current ? 'bg-violet-500' : 'bg-slate-200'}`} />
+            <div className={`w-12 h-px mx-1 transition-colors ${step.num < current ? 'bg-blue-500' : 'bg-slate-200'}`} />
           )}
         </div>
       ))}
@@ -228,20 +228,20 @@ function ModeCard({ mode, selected, onClick }: { mode: WebinarMode; selected: bo
       className={`relative w-full text-left rounded-2xl border-2 p-6 transition-all duration-200 ${
         selected
           ? isViolet
-            ? 'border-violet-500/60 bg-violet-500/10'
-            : 'border-orange-500/60 bg-orange-500/10'
+            ? 'border-[#1d6fe8] bg-blue-50'
+            : 'border-[#f4b413] bg-amber-50'
           : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-50'
       }`}
     >
       {c.badge && (
-        <span className="absolute top-3 right-3 text-xs font-medium text-violet-300 bg-violet-500/20 px-2 py-0.5 rounded-lg">
+        <span className="absolute top-3 right-3 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-lg">
           {c.badge}
         </span>
       )}
 
       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
         selected
-          ? isViolet ? 'bg-violet-500/20 text-violet-300' : 'bg-orange-500/20 text-orange-300'
+          ? isViolet ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600'
           : 'bg-slate-100 text-muted-foreground'
       }`}>
         {c.icon}
@@ -275,76 +275,6 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
       >
         <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
-    </div>
-  );
-}
-
-// ─── Tags Input ───────────────────────────────────────────────────────────────
-
-function TagsInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) => void }) {
-  const [input, setInput] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-
-  const addTag = (tag: string) => {
-    const trimmed = tag.trim();
-    if (!trimmed || tags.includes(trimmed) || tags.length >= 5) return;
-    onChange([...tags, trimmed]);
-    setInput('');
-  };
-
-  const removeTag = (tag: string) => onChange(tags.filter((t) => t !== tag));
-
-  const suggestions = PRESET_TAGS.filter(
-    (t) => !tags.includes(t) && t.toLowerCase().includes(input.toLowerCase())
-  );
-
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
-        {tags.map((tag) => (
-          <span key={tag} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-500/20 border border-violet-500/30 text-violet-300">
-            {tag}
-            <button type="button" onClick={() => removeTag(tag)} className="hover:text-foreground">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </span>
-        ))}
-      </div>
-
-      {tags.length < 5 && (
-        <div className="relative">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => { setInput(e.target.value); setShowSuggestions(true); }}
-            onFocus={() => setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); addTag(input); }
-              if (e.key === ',')    { e.preventDefault(); addTag(input); }
-            }}
-            placeholder="Type a tag and press Enter…"
-            className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-foreground placeholder-white/30 text-sm focus:outline-none focus:border-violet-500/60 transition-all"
-          />
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full mt-1 left-0 right-0 bg-[#1a1a2e] border border-slate-200 rounded-xl shadow-xl z-10 overflow-hidden">
-              {suggestions.slice(0, 5).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onMouseDown={() => addTag(s)}
-                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-slate-100 hover:text-foreground transition-colors"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      <p className="text-xs text-muted-foreground">{tags.length}/5 tags</p>
     </div>
   );
 }
@@ -647,23 +577,10 @@ function CreateWebinarForm() {
           privateWebinar:      form.privateWebinar,
           requireLogin:        form.requireLogin,
           waitingRoom:         form.waitingRoom,
-          waitingThumbnailUrl: form.waitingThumbnailUrl || null,
           enableWatermark:     form.enableWatermark,
           showLiveCount:       form.showLiveCount,
           enableRecording:     form.enableRecording,
           timezone:            form.timezone,
-          tags:                form.tags,
-          branding: {
-            logoUrl:     form.brandingLogoUrl || null,
-            accentColor: form.brandingAccentColor,
-          },
-          recurrence: form.repeat ? {
-            frequency:   form.recurrence.frequency,
-            daysOfWeek:  form.recurrence.daysOfWeek,
-            dayOfMonth:  form.recurrence.dayOfMonth,
-            endDate:     form.recurrence.endDate || null,
-            occurrences: form.recurrence.occurrences,
-          } : null,
         },
       };
 
@@ -942,15 +859,6 @@ function CreateWebinarForm() {
                   />
                 </label>
               )}
-            </div>
-
-            {/* ── Tags ─────────────────────────────────────────────────────────── */}
-            <div className="space-y-2">
-              <div>
-                <p className="text-sm font-medium text-foreground">Tags</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Add up to 5 tags to categorize your webinar</p>
-              </div>
-              <TagsInput tags={form.tags} onChange={(t) => update({ tags: t })} />
             </div>
 
             {/* Semi-Live Video Selector */}
@@ -1363,7 +1271,7 @@ function CreateWebinarForm() {
                 { label: 'Duration', value: (() => { const h = Math.floor(form.duration / 60); const m = form.duration % 60; return m > 0 ? `${h}h ${m}m` : `${h}h`; })() },
                 { label: 'Timezone', value: form.timezone },
                 { label: 'Max Attendees', value: form.maxAttendees.toLocaleString() },
-                { label: 'Tags', value: form.tags.length > 0 ? form.tags.join(', ') : '—' },
+
                 { label: 'Cover Image', value: form.thumbnailUrl ? '✅ Set' : '—' },
                 { label: 'Registration Page', value: form.requireRegistration ? '✅ On' : '—' },
                 { label: 'Require Login', value: form.requireLogin ? '✅ On' : '—' },

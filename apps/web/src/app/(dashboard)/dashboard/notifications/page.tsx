@@ -89,7 +89,7 @@ export default function NotificationsPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
             {unreadCount > 0 && (
-              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-[#5271ff] text-foreground">
+              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-[#1d6fe8] text-foreground">
                 {unreadCount}
               </span>
             )}
@@ -155,7 +155,7 @@ export default function NotificationsPage() {
                     <p className="font-semibold text-sm text-foreground flex items-center gap-2">
                       {item.title}
                       {!item.read && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#5271ff] inline-block" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1d6fe8] inline-block" />
                       )}
                     </p>
                     <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">

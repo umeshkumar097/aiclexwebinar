@@ -277,7 +277,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => downloadWebinarReport(selectedWebinar)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#5271ff] hover:bg-blue-600 text-foreground text-xs font-semibold transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1d6fe8] hover:bg-blue-600 text-foreground text-xs font-semibold transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                     CSV Report

@@ -65,7 +65,7 @@ export default function LoginPage(): React.ReactElement {
         className="hidden lg:flex lg:w-1/2 xl:w-3/5 flex-col justify-between p-12 relative overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, #f4f7ff 0%, #e0edff 100%)',
-          borderRight: '1px solid #5271ff',
+          borderRight: '1px solid #1d6fe8',
         }}
       >
         {/* Background blobs */}
@@ -75,11 +75,11 @@ export default function LoginPage(): React.ReactElement {
         >
           <div
             className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20"
-            style={{ background: '#5271ff' }}
+            style={{ background: '#1d6fe8' }}
           />
           <div
             className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-3xl opacity-15"
-            style={{ background: '#ff914d' }}
+            style={{ background: '#d4af37' }}
           />
         </div>
 
@@ -88,7 +88,7 @@ export default function LoginPage(): React.ReactElement {
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
             style={{
-              background: 'linear-gradient(135deg, #5271ff, #ff914d)',
+              background: 'linear-gradient(135deg, #1d6fe8, #d4af37)',
             }}
           >
             <Zap className="w-5 h-5 text-white" fill="white" />
@@ -150,7 +150,7 @@ export default function LoginPage(): React.ReactElement {
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center shadow-sm"
               style={{
-                background: 'linear-gradient(135deg, #5271ff, #ff914d)',
+                background: 'linear-gradient(135deg, #1d6fe8, #d4af37)',
               }}
             >
               <Zap className="w-4.5 h-4.5 text-white" fill="white" />
@@ -273,8 +273,8 @@ export default function LoginPage(): React.ReactElement {
               className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed btn-glow flex items-center justify-center gap-2 shadow-md"
               style={{
                 background: isSubmitting
-                  ? '#5271ff'
-                  : 'linear-gradient(135deg, #5271ff, #5271ff)',
+                  ? '#1d6fe8'
+                  : 'linear-gradient(135deg, #1d6fe8, #1d6fe8)',
               }}
             >
               {isSubmitting ? (

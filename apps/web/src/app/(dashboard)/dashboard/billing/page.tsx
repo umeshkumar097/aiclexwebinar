@@ -6,7 +6,7 @@ import {
   Check,
   Zap,
   Crown,
-  Building2,
+
   FileText,
   CreditCard,
   X,
@@ -34,9 +34,9 @@ const PLANS: Plan[] = [
     price: '$0',
     period: '/month',
     icon: Zap,
-    iconColor: '#5271ff',
-    iconBg: 'rgba(82, 113, 255, 0.1)',
-    borderColor: 'rgba(82, 113, 255, 0.2)',
+    iconColor: '#1d6fe8',
+    iconBg: 'rgba(29, 111, 232, 0.1)',
+    borderColor: 'rgba(29, 111, 232, 0.2)',
     current: true,
     features: [
       '1 webinar / month',
@@ -53,7 +53,7 @@ const PLANS: Plan[] = [
     price: '$49',
     period: '/month',
     icon: Crown,
-    iconColor: '#ff914d',
+    iconColor: '#d4af37',
     iconBg: 'rgba(255, 145, 77, 0.1)',
     borderColor: 'rgba(255, 145, 77, 0.3)',
     badge: 'Most Popular',
@@ -67,27 +67,6 @@ const PLANS: Plan[] = [
       'Recordings (30 days)',
     ],
     cta: 'Upgrade to Pro',
-  },
-  {
-    id: 'plan-business',
-    name: 'Business',
-    price: '$149',
-    period: '/month',
-    icon: Building2,
-    iconColor: '#5271ff',
-    iconBg: 'rgba(82, 113, 255, 0.15)',
-    borderColor: 'rgba(82, 113, 255, 0.4)',
-    features: [
-      'Unlimited webinars',
-      '2,000 attendees max',
-      '100 GB storage',
-      'All Pro features',
-      'Priority support',
-      'White-label branding',
-      'API access',
-      'Custom domain',
-    ],
-    cta: 'Upgrade to Business',
   },
 ];
 
@@ -142,12 +121,12 @@ export default function BillingPage(): React.ReactElement {
             className="glass-card p-5 flex items-center gap-4"
             style={{
               background: '#ffffff',
-              borderColor: 'rgba(82, 113, 255, 0.2)',
+              borderColor: 'rgba(29, 111, 232, 0.2)',
             }}
           >
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(82, 113, 255, 0.1)' }}
+              style={{ background: 'rgba(29, 111, 232, 0.1)' }}
             >
               <Zap className="w-6 h-6 text-primary" />
             </div>
@@ -167,7 +146,7 @@ export default function BillingPage(): React.ReactElement {
         {/* ─── Plan Cards ─────────────────────────────────── */}
         <motion.div variants={itemVariants}>
           <h2 className="text-sm font-semibold text-foreground mb-4">Compare Plans</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
             {PLANS.map((plan) => (
               <div
                 key={plan.id}
@@ -230,8 +209,8 @@ export default function BillingPage(): React.ReactElement {
                     style={{
                       background: `linear-gradient(135deg, ${plan.iconColor}, ${
                         plan.id === 'plan-pro'
-                          ? '#5271ff'
-                          : '#5271ff'
+                          ? '#1d6fe8'
+                          : '#1d6fe8'
                       })`,
                     }}
                   >
@@ -253,7 +232,7 @@ export default function BillingPage(): React.ReactElement {
             <div className="p-12 flex flex-col items-center justify-center text-center space-y-3">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: 'rgba(82, 113, 255, 0.08)' }}
+                style={{ background: 'rgba(29, 111, 232, 0.08)' }}
               >
                 <FileText className="w-7 h-7 text-muted-foreground" />
               </div>

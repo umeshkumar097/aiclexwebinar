@@ -28,8 +28,8 @@ const quickActions = [
     description: 'Launch a new semi-live webinar',
     icon: Video,
     href: '/dashboard/webinars/new',
-    color: '#5271ff',
-    bg: 'rgba(82, 113, 255, 0.1)',
+    color: '#1d6fe8',
+    bg: 'rgba(29, 111, 232, 0.1)',
   },
   {
     id: 'action-upload-recording',
@@ -37,7 +37,7 @@ const quickActions = [
     description: 'Add pre-recorded video content',
     icon: PlayCircle,
     href: '/dashboard/webinars/new?step=recording',
-    color: '#ff914d',
+    color: '#d4af37',
     bg: 'rgba(255, 145, 77, 0.1)',
   },
   {
@@ -132,8 +132,8 @@ export default function DashboardPage(): React.ReactElement {
       value: statsLoading ? null : String(statsData?.total ?? 0),
       change: null,
       icon: Video,
-      color: '#5271ff',
-      bg: 'rgba(82, 113, 255, 0.1)',
+      color: '#1d6fe8',
+      bg: 'rgba(29, 111, 232, 0.1)',
     },
     {
       id: 'stat-live-now',
@@ -150,7 +150,7 @@ export default function DashboardPage(): React.ReactElement {
       value: statsLoading ? null : String(statsData?.scheduled ?? 0),
       change: null,
       icon: Calendar,
-      color: '#ff914d',
+      color: '#d4af37',
       bg: 'rgba(255, 145, 77, 0.1)',
     },
     {
@@ -188,7 +188,7 @@ export default function DashboardPage(): React.ReactElement {
             id="dashboard-create-webinar"
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-foreground btn-glow flex-shrink-0 transition-all"
             style={{
-              background: 'linear-gradient(135deg, #5271ff, #5271ff)',
+              background: 'linear-gradient(135deg, #1d6fe8, #1d6fe8)',
             }}
           >
             <Plus className="w-4 h-4" />
@@ -287,7 +287,7 @@ export default function DashboardPage(): React.ReactElement {
                 <div className="p-12 flex flex-col items-center justify-center text-center space-y-4">
                   <div
                     className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                    style={{ background: 'rgba(82, 113, 255, 0.1)' }}
+                    style={{ background: 'rgba(29, 111, 232, 0.1)' }}
                   >
                     <Zap className="w-8 h-8 text-primary" />
                   </div>
@@ -302,7 +302,7 @@ export default function DashboardPage(): React.ReactElement {
                     id="empty-state-create-webinar"
                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-foreground btn-glow mt-2"
                     style={{
-                      background: 'linear-gradient(135deg, #5271ff, #5271ff)',
+                      background: 'linear-gradient(135deg, #1d6fe8, #1d6fe8)',
                     }}
                   >
                     <Plus className="w-4 h-4" />
@@ -330,7 +330,7 @@ export default function DashboardPage(): React.ReactElement {
                       >
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ background: 'rgba(82, 113, 255, 0.1)' }}
+                          style={{ background: 'rgba(29, 111, 232, 0.1)' }}
                         >
                           <Video className="w-4 h-4 text-primary" />
                         </div>
@@ -364,13 +364,13 @@ export default function DashboardPage(): React.ReactElement {
             className="glass-card p-6"
             style={{
               background: '#ffffff',
-              borderColor: 'rgba(82, 113, 255, 0.2)',
+              borderColor: 'rgba(29, 111, 232, 0.2)',
             }}
           >
             <div className="flex items-start gap-4">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(82, 113, 255, 0.1)' }}
+                style={{ background: 'rgba(29, 111, 232, 0.1)' }}
               >
                 <Zap className="w-5 h-5 text-primary" />
               </div>

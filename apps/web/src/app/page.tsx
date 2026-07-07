@@ -71,23 +71,6 @@ const plans = [
     highlighted: true,
     id: 'plan-complete',
   },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    period: '',
-    description: 'For large organizations',
-    features: [
-      'Unlimited webinars',
-      'Unlimited attendees',
-      'Unlimited storage',
-      'Dedicated support',
-      'SLA guarantee',
-      'Custom integrations',
-    ],
-    cta: 'Contact sales',
-    highlighted: false,
-    id: 'plan-enterprise',
-  },
 ];
 
 export default function HomePage(): React.ReactElement {
@@ -99,7 +82,7 @@ export default function HomePage(): React.ReactElement {
           <Link href="/" id="nav-logo" className="flex items-center gap-2.5">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
-              style={{ background: 'linear-gradient(135deg, #5271ff, #ff914d)' }}
+              style={{ background: 'linear-gradient(135deg, #1d6fe8, #d4af37)' }}
             >
               <Zap className="w-4 h-4 text-white" fill="white" />
             </div>
@@ -124,7 +107,7 @@ export default function HomePage(): React.ReactElement {
               href="/register"
               id="nav-register"
               className="px-4 py-2 rounded-lg text-sm font-semibold text-white btn-glow shadow-sm"
-              style={{ background: 'linear-gradient(135deg, #5271ff, #5271ff)' }}
+              style={{ background: 'linear-gradient(135deg, #1d6fe8, #1d6fe8)' }}
             >
               Get started free
             </Link>
@@ -135,14 +118,14 @@ export default function HomePage(): React.ReactElement {
       {/* ─── Hero ──────────────────────────────────────────────────────────── */}
       <section className="relative py-24 lg:py-36 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div className="absolute top-0 left-1/4 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-15" style={{ background: '#5271ff' }} />
-          <div className="absolute bottom-0 right-1/4 translate-x-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-10" style={{ background: '#ff914d' }} />
+          <div className="absolute top-0 left-1/4 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-15" style={{ background: '#1d6fe8' }} />
+          <div className="absolute bottom-0 right-1/4 translate-x-1/4 w-[500px] h-[500px] rounded-full blur-3xl opacity-10" style={{ background: '#d4af37' }} />
         </div>
 
         <div className="relative max-w-5xl mx-auto px-6 text-center">
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-8"
-            style={{ background: 'rgba(82, 113, 255, 0.1)', border: '1px solid rgba(82, 113, 255, 0.3)', color: '#5271ff' }}
+            style={{ background: 'rgba(29, 111, 232, 0.1)', border: '1px solid rgba(29, 111, 232, 0.3)', color: '#1d6fe8' }}
           >
             <Zap className="w-3 h-3" />
             Now in public beta — free forever
@@ -164,7 +147,7 @@ export default function HomePage(): React.ReactElement {
               href="/register"
               id="hero-cta-primary"
               className="px-8 py-3.5 rounded-xl text-base font-semibold text-white btn-glow flex items-center gap-2 shadow-md"
-              style={{ background: 'linear-gradient(135deg, #5271ff, #5271ff)' }}
+              style={{ background: 'linear-gradient(135deg, #1d6fe8, #1d6fe8)' }}
             >
               Start for free
               <ArrowRight className="w-4 h-4" />
@@ -206,7 +189,7 @@ export default function HomePage(): React.ReactElement {
               >
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center"
-                  style={{ background: 'rgba(82, 113, 255, 0.1)' }}
+                  style={{ background: 'rgba(29, 111, 232, 0.1)' }}
                 >
                   <feature.icon className="w-5 h-5 text-primary" />
                 </div>
@@ -226,18 +209,18 @@ export default function HomePage(): React.ReactElement {
             <p className="mt-4 text-muted-foreground">Start free. Scale as you grow.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {plans.map((plan) => (
               <div
                 key={plan.id}
                 id={plan.id}
                 className={`glass-card p-6 flex flex-col gap-6 ${plan.highlighted ? 'border-primary' : ''}`}
-                style={plan.highlighted ? { borderColor: '#5271ff', boxShadow: '0 8px 32px rgba(82, 113, 255, 0.1)' } : {}}
+                style={plan.highlighted ? { borderColor: '#1d6fe8', boxShadow: '0 8px 32px rgba(29, 111, 232, 0.1)' } : {}}
               >
                 {plan.highlighted && (
                   <div
                     className="text-center py-1 rounded-full text-xs font-semibold text-white -mt-2 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #5271ff, #ff914d)' }}
+                    style={{ background: 'linear-gradient(135deg, #1d6fe8, #d4af37)' }}
                   >
                     Most Popular
                   </div>
@@ -271,7 +254,7 @@ export default function HomePage(): React.ReactElement {
                   }`}
                   style={
                     plan.highlighted
-                      ? { background: 'linear-gradient(135deg, #5271ff, #5271ff)' }
+                      ? { background: 'linear-gradient(135deg, #1d6fe8, #1d6fe8)' }
                       : {}
                   }
                 >
@@ -287,7 +270,7 @@ export default function HomePage(): React.ReactElement {
       <footer className="border-t border-border/50 py-12">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #5271ff, #ff914d)' }}>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #1d6fe8, #d4af37)' }}>
               <Zap className="w-3.5 h-3.5 text-white" fill="white" />
             </div>
             <span className="font-bold text-foreground text-sm">Zonvo</span>

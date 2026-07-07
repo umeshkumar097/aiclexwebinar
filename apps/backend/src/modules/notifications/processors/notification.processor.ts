@@ -78,8 +78,28 @@ export class NotificationProcessor extends WorkerHost {
     const smtpUser = this.configService.get('email.smtpUser' as never, { infer: true }) as string | undefined;
     const smtpPassword = this.configService.get('email.smtpPassword' as never, { infer: true }) as string | undefined;
     const smtpSecure = this.configService.get('email.smtpSecure' as never, { infer: true }) as boolean | undefined;
-    const fromEmail = this.configService.get('email.fromEmail', { infer: true });
-    const fromName = this.configService.get('email.fromName', { infer: true });
+    let fromEmail = this.configService.get('email.fromEmail', { infer: true }) as string;
+    let fromName = this.configService.get('email.fromName', { infer: true }) as string;
+
+    if (templateKey.startsWith('auth.')) {
+      fromEmail = 'security@zonvo.in';
+      fromName = 'Aiclex Security';
+    } else if (templateKey.startsWith('webinar.reminder')) {
+      fromEmail = 'reminder@zonvo.in';
+      fromName = 'Webinar Reminder';
+    } else if (templateKey === 'webinar.started') {
+      fromEmail = 'live@zonvo.in';
+      fromName = 'Aiclex Live';
+    } else if (templateKey === 'webinar.registration_confirmed') {
+      fromEmail = 'registration@zonvo.in';
+      fromName = 'Webinar Registration';
+    } else if (templateKey.startsWith('member.')) {
+      fromEmail = 'team@zonvo.in';
+      fromName = 'Aiclex Team';
+    } else {
+      fromEmail = 'info@zonvo.in';
+      fromName = 'Aiclex Webinar';
+    }
 
     const { subject, html } = this.renderEmailTemplate(templateKey, variables);
 

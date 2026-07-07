@@ -23,11 +23,11 @@ function ClientDate({ iso }: { iso: string | null }) {
 }
 
 const STATUS_CONFIG = {
-  draft:     { label: 'Draft',     color: 'text-muted-foreground',    bg: 'bg-slate-100',        dot: 'bg-white/30', border: 'border-slate-200' },
-  scheduled: { label: 'Scheduled', color: 'text-blue-400',    bg: 'bg-blue-500/10',    dot: 'bg-blue-400', border: 'border-blue-500/20' },
-  live:      { label: 'Live Now',  color: 'text-emerald-400', bg: 'bg-emerald-500/10', dot: 'bg-emerald-400 animate-pulse', border: 'border-emerald-500/20' },
-  ended:     { label: 'Ended',     color: 'text-muted-foreground',    bg: 'bg-slate-100',        dot: 'bg-white/20', border: 'border-slate-200' },
-  cancelled: { label: 'Cancelled', color: 'text-red-400',     bg: 'bg-red-500/10',     dot: 'bg-red-400', border: 'border-red-500/20' },
+  draft:     { label: 'Draft',     color: 'text-muted-foreground',    bg: 'bg-slate-100',        dot: 'bg-slate-400', border: 'border-slate-200' },
+  scheduled: { label: 'Scheduled', color: 'text-blue-600',    bg: 'bg-blue-100',    dot: 'bg-blue-600', border: 'border-blue-200' },
+  live:      { label: 'Live Now',  color: 'text-emerald-700', bg: 'bg-emerald-100', dot: 'bg-emerald-600 animate-pulse', border: 'border-emerald-200' },
+  ended:     { label: 'Ended',     color: 'text-muted-foreground',    bg: 'bg-slate-100',        dot: 'bg-slate-400', border: 'border-slate-200' },
+  cancelled: { label: 'Cancelled', color: 'text-red-700',     bg: 'bg-red-100',     dot: 'bg-red-600', border: 'border-red-200' },
 };
 
 // ─── Stat Box ──────────────────────────────────────────────────────────────────
@@ -53,10 +53,10 @@ function ActionButton({
   disabled?: boolean;
 }) {
   const styles = {
-    default: 'bg-slate-50 hover:bg-white/[0.08] border border-slate-200 text-foreground hover:text-foreground',
-    primary: 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-foreground shadow-lg shadow-violet-500/20',
-    danger:  'bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300',
-    live:    'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-foreground shadow-lg shadow-emerald-500/20',
+    default: 'bg-slate-50 hover:bg-slate-100 border border-slate-200 text-foreground',
+    primary: 'bg-gradient-to-r from-blue-600 to-[#1d6fe8] hover:from-blue-700 hover:to-blue-600 text-white shadow-lg shadow-blue-500/20',
+    danger:  'bg-red-50 hover:bg-red-100 border border-red-200 text-red-600',
+    live:    'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/20',
   };
   return (
     <button
@@ -228,7 +228,7 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
         <p className="text-muted-foreground text-sm mb-6">The webinar may have been deleted or you don't have access.</p>
         <Link
           href="/dashboard/webinars"
-          className="px-4 py-2 rounded-xl text-sm font-medium text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 transition-colors"
+          className="px-4 py-2 rounded-xl text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
         >
           ← Back to Webinars
         </Link>
@@ -249,7 +249,7 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
           className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-xl text-sm font-medium shadow-xl ${
-            toast.type === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-red-500/90 text-white'
+            toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
           }`}
         >
           {toast.msg}
@@ -353,8 +353,8 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
             transition={{ duration: 0.8, ease: 'easeOut' }}
             className={`h-full rounded-full ${
               fillPct >= 90 ? 'bg-gradient-to-r from-orange-500 to-red-500' :
-              fillPct >= 60 ? 'bg-gradient-to-r from-violet-500 to-indigo-500' :
-              'bg-gradient-to-r from-violet-600 to-violet-500'
+              fillPct >= 60 ? 'bg-gradient-to-r from-blue-500 to-[#1d6fe8]' :
+              'bg-gradient-to-r from-blue-600 to-blue-500'
             }`}
           />
         </div>
@@ -393,7 +393,7 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
             <div className="space-y-2">
               <label className="block text-xs text-muted-foreground">Upload Video File <span className="text-muted-foreground">(MP4, MOV, WebM — up to 10 GB)</span></label>
               <label className={`flex flex-col items-center justify-center border border-dashed rounded-xl p-4 cursor-pointer transition-all h-24 text-center ${
-                isUploading ? 'border-violet-500/60 bg-violet-500/5' : 'border-slate-300 hover:border-violet-500/50 hover:bg-white/[0.01]'
+                isUploading ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-[#1d6fe8] hover:bg-slate-50'
               }`}>
                 <span className="text-2xl mb-1">{isUploading ? '⏳' : '📤'}</span>
                 <span className="text-xs text-foreground font-semibold">
@@ -421,9 +421,9 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
               {isUploading && (
                 <div className="space-y-1.5 mt-1">
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-violet-600 to-indigo-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                    <div className="h-full bg-gradient-to-r from-blue-600 to-[#1d6fe8] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                   </div>
-                  <p className="text-[10px] text-violet-400 text-center">{uploadProgress}% uploaded to cloud storage</p>
+                  <p className="text-[10px] text-blue-600 text-center">{uploadProgress}% uploaded to cloud storage</p>
                 </div>
               )}
             </div>
@@ -437,7 +437,7 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
                   value={editVideoUrl}
                   onChange={(e) => setEditVideoUrl(e.target.value)}
                   placeholder="e.g. https://cdn.example.com/video.mp4"
-                  className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-foreground placeholder-white/20 focus:outline-none focus:border-violet-500/60"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-foreground placeholder-slate-400 focus:outline-none focus:border-[#1d6fe8]"
                 />
               </div>
 
@@ -458,14 +458,14 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
                       showToast('Failed to save schedule', 'error');
                     }
                   }}
-                  className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-violet-500/60"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-[#1d6fe8]"
                 />
               </div>
 
               <button
                 onClick={handleSaveVideoUrl}
                 disabled={actionLoading || isUploading}
-                className="w-full py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-500 disabled:opacity-40 transition-colors"
+                className="w-full py-2 rounded-xl text-xs font-semibold bg-[#1d6fe8] hover:bg-blue-600 text-white disabled:opacity-40 transition-colors"
               >
                 Save Video Config
               </button>
@@ -473,7 +473,7 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           {webinar.videoUrl && (
-            <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-2xl overflow-hidden">
+            <div className="border border-emerald-200 bg-emerald-50 rounded-2xl overflow-hidden">
               {/* Video preview */}
               <div className="relative bg-black aspect-video w-full max-h-52">
                 <video
@@ -493,13 +493,13 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
               {/* Actions */}
               <div className="flex items-center justify-between px-4 py-3 gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-emerald-400 text-sm">✅</span>
+                  <span className="text-emerald-600 text-sm">✅</span>
                   <span className="text-foreground text-xs font-medium">Video ready</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Replace via URL */}
                   <label className="cursor-pointer">
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-white/[0.10] border border-slate-200 text-foreground hover:text-foreground transition-all">
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 text-foreground hover:text-foreground transition-all">
                       🔄 Replace
                     </span>
                     <input
@@ -531,7 +531,7 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
                         showToast('Failed to remove video', 'error');
                       }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700 transition-all"
                   >
                     🗑 Delete
                   </button>
@@ -541,9 +541,9 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
               {isUploading && (
                 <div className="px-4 pb-3 space-y-1">
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-violet-600 to-indigo-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                    <div className="h-full bg-gradient-to-r from-blue-600 to-[#1d6fe8] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                   </div>
-                  <p className="text-[10px] text-violet-400 text-center">{uploadProgress}% uploaded</p>
+                  <p className="text-[10px] text-blue-600 text-center">{uploadProgress}% uploaded</p>
                 </div>
               )}
             </div>
@@ -557,14 +557,14 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
           <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">Share with Attendees</h3>
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
             {/* 8-digit code */}
-            <div className="flex-1 bg-black/20 border border-slate-200 rounded-xl p-4 text-center">
+            <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
               <p className="text-muted-foreground text-xs mb-2">Join Code</p>
               <p className="text-3xl font-bold text-foreground tracking-[0.3em] font-mono">{webinar.joinCode}</p>
             </div>
             {/* Direct join link */}
             <div className="flex-[2] space-y-2">
               <p className="text-muted-foreground text-xs">Direct Join Link</p>
-              <div className="flex items-center gap-2 bg-black/20 border border-slate-200 rounded-xl px-3 py-2">
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
                 <span className="text-foreground text-xs font-mono truncate flex-1">
                   {typeof window !== 'undefined' ? `${window.location.origin}/join/${webinar.joinCode}` : `/join/${webinar.joinCode}`}
                 </span>
@@ -574,13 +574,13 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
                     const link = `${window.location.origin}/join/${webinar.joinCode}`;
                     void navigator.clipboard.writeText(link);
                   }}
-                  className="flex-shrink-0 text-xs px-3 py-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 transition-colors font-medium"
+                  className="flex-shrink-0 text-xs px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors font-medium"
                 >
                   Copy
                 </button>
               </div>
               {webinar.password && (
-                <p className="text-xs text-amber-400/80 flex items-center gap-1.5">
+                <p className="text-xs text-amber-600 flex items-center gap-1.5">
                   <span>🔒</span> Password protected — share password separately
                 </p>
               )}
@@ -588,15 +588,15 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Registration link (separate card) */}
-          <div className="border-t border-white/[0.05] pt-4">
+          <div className="border-t border-slate-200 pt-4">
             <div className="flex items-start gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1.5">
                   <p className="text-foreground text-xs font-medium">Registration Link</p>
-                  <span className="text-[10px] bg-violet-500/10 text-violet-400 border border-violet-500/20 px-1.5 py-0.5 rounded-md font-medium">Recommended</span>
+                  <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded-md font-medium">Recommended</span>
                 </div>
                 <p className="text-muted-foreground text-[11px] mb-2">Share this link so attendees register with name & email before joining.</p>
-                <div className="flex items-center gap-2 bg-black/20 border border-slate-200 rounded-xl px-3 py-2">
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
                   <span className="text-foreground text-xs font-mono truncate flex-1">
                     {typeof window !== 'undefined' ? `${window.location.origin}/join/${webinar.joinCode}/register` : `/join/${webinar.joinCode}/register`}
                   </span>
@@ -606,7 +606,7 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
                       const link = `${window.location.origin}/join/${webinar.joinCode}/register`;
                       void navigator.clipboard.writeText(link);
                     }}
-                    className="flex-shrink-0 text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors font-medium"
+                    className="flex-shrink-0 text-xs px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors font-medium"
                   >
                     Copy
                   </button>
@@ -622,16 +622,16 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center"
+          className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center"
         >
           <div className="text-4xl mb-3">🔴</div>
-          <h3 className="text-emerald-400 font-bold text-lg mb-1">This webinar is LIVE</h3>
+          <h3 className="text-emerald-700 font-bold text-lg mb-1">This webinar is LIVE</h3>
           <p className="text-muted-foreground text-sm mb-4">
             Started at <ClientDate iso={webinar.startedAt} />
           </p>
           <Link
             href={`/dashboard/webinars/${webinar.id}/studio`}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-foreground bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 transition-all shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5">
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5">
             🎙 Join Live Studio
           </Link>
         </motion.div>

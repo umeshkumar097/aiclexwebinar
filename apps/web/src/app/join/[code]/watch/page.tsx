@@ -408,10 +408,10 @@ export default function WatchPage({
         <div className="relative flex-1 bg-black overflow-hidden flex flex-col">
 
           {announcement && (
-            <div className="flex-shrink-0 bg-gradient-to-r from-violet-600/90 to-indigo-600/90 backdrop-blur-sm border-b border-violet-500/30 px-4 py-2.5 flex items-center gap-3 z-40">
+            <div className="flex-shrink-0 bg-gradient-to-r from-violet-600/90 to-indigo-600/90 backdrop-blur-sm border-b border-blue-200 px-4 py-2.5 flex items-center gap-3 z-40">
               <span className="text-xl flex-shrink-0">📢</span>
-              <p className="text-white text-sm font-medium flex-1 leading-snug">{announcement}</p>
-              <button onClick={() => setAnnouncement(null)} className="text-white/50 hover:text-white text-xs flex-shrink-0">✕</button>
+              <p className="text-foreground text-sm font-medium flex-1 leading-snug">{announcement}</p>
+              <button onClick={() => setAnnouncement(null)} className="text-muted-foreground hover:text-foreground text-xs flex-shrink-0">✕</button>
             </div>
           )}
 
@@ -422,8 +422,8 @@ export default function WatchPage({
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 z-30">
                 <div className="w-12 h-12 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                 <div className="text-center">
-                  <p className="text-white font-bold text-base">Host is going live!</p>
-                  <p className="text-white/50 text-sm mt-1">Switching to live camera…</p>
+                  <p className="text-foreground font-bold text-base">Host is going live!</p>
+                  <p className="text-muted-foreground text-sm mt-1">Switching to live camera…</p>
                 </div>
               </div>
             )}
@@ -436,10 +436,10 @@ export default function WatchPage({
             />
 
             {videoError && !isTakenOver && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#08080f] z-20">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
                 <div className="text-5xl mb-4">⚠️</div>
-                <p className="text-white/70 font-semibold mb-2">Video unavailable</p>
-                <p className="text-white/30 text-sm mb-6">Attempting to connect to live stream…</p>
+                <p className="text-foreground font-semibold mb-2">Video unavailable</p>
+                <p className="text-muted-foreground text-sm mb-6">Attempting to connect to live stream…</p>
                 <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
               </div>
             )}
@@ -461,12 +461,12 @@ export default function WatchPage({
                 {watermark === '1' && (
                   <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-30 select-none z-50">
                     <div className="absolute top-1/4 left-1/4 rotate-[-30deg] transform">
-                      <p className="text-3xl font-bold text-white/50 tracking-widest">{displayName}</p>
-                      <p className="text-sm font-mono text-white/30">{new Date().toISOString().split('T')[0]}</p>
+                      <p className="text-3xl font-bold text-muted-foreground tracking-widest">{displayName}</p>
+                      <p className="text-sm font-mono text-muted-foreground">{new Date().toISOString().split('T')[0]}</p>
                     </div>
                     <div className="absolute bottom-1/4 right-1/4 rotate-[-30deg] transform">
-                      <p className="text-3xl font-bold text-white/50 tracking-widest">{displayName}</p>
-                      <p className="text-sm font-mono text-white/30">{new Date().toISOString().split('T')[0]}</p>
+                      <p className="text-3xl font-bold text-muted-foreground tracking-widest">{displayName}</p>
+                      <p className="text-sm font-mono text-muted-foreground">{new Date().toISOString().split('T')[0]}</p>
                     </div>
                   </div>
                 )}
@@ -480,7 +480,7 @@ export default function WatchPage({
                           void videoRef.current.play().catch(() => {});
                         }
                       }}
-                      className="pointer-events-auto flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                      className="pointer-events-auto flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-[#1d6fe8] hover:bg-[#1d6fe8] text-foreground font-bold text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all"
                     >
                       🔊 Tap to Unmute / Play
                     </button>
@@ -499,18 +499,18 @@ export default function WatchPage({
             )}
 
             {!videoUrl && !isTakenOver && !sessionEnded && !videoError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#08080f]">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50">
                 <div className="text-5xl mb-4">🎬</div>
-                <p className="text-white/50 text-sm">Video not configured</p>
+                <p className="text-muted-foreground text-sm">Video not configured</p>
               </div>
             )}
 
             {showReplayModal && !sessionEnded && (
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-40">
-                <div className="bg-[#0d0d14] border border-white/10 rounded-2xl p-6 w-[300px] shadow-2xl text-center">
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 w-[300px] shadow-2xl text-center">
                   <div className="text-4xl mb-3">🏁</div>
-                  <h3 className="text-white font-bold text-lg mb-1">Presentation Complete</h3>
-                  <p className="text-white/40 text-xs mb-5">What would you like to do?</p>
+                  <h3 className="text-foreground font-bold text-lg mb-1">Presentation Complete</h3>
+                  <p className="text-muted-foreground text-xs mb-5">What would you like to do?</p>
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => {
@@ -521,7 +521,7 @@ export default function WatchPage({
                           void videoRef.current.play().catch(() => {});
                         }
                       }}
-                      className="w-full py-3 rounded-xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 transition-colors"
+                      className="w-full py-3 rounded-xl text-sm font-bold text-white bg-[#1d6fe8] hover:bg-[#1d6fe8] transition-colors"
                     >
                       🔄 Watch Again
                     </button>
@@ -530,7 +530,7 @@ export default function WatchPage({
                         setShowReplayModal(false);
                         setLooping(true);
                       }}
-                      className="w-full py-2.5 rounded-xl text-sm font-medium text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 transition-colors"
+                      className="w-full py-2.5 rounded-xl text-sm font-medium text-[#1d6fe8] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
                     >
                       🔁 Loop Playback
                     </button>
@@ -539,7 +539,7 @@ export default function WatchPage({
                         setShowReplayModal(false);
                         setSessionEnded(true);
                       }}
-                      className="w-full py-2.5 rounded-xl text-sm font-medium text-white/60 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-colors"
+                      className="w-full py-2.5 rounded-xl text-sm font-medium text-muted-foreground bg-white hover:bg-white/[0.08] border border-slate-200 transition-colors"
                     >
                       Exit
                     </button>
@@ -551,22 +551,22 @@ export default function WatchPage({
             {sessionEnded && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#0a0a14] to-[#08080f] z-20">
                 <div className="flex flex-col items-center gap-5 px-6 text-center max-w-sm">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-600/30 to-violet-800/20 border border-violet-500/20 flex items-center justify-center text-4xl">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-600/30 to-violet-800/20 border border-blue-200 flex items-center justify-center text-4xl">
                     🏁
                   </div>
                   <div>
-                    <h2 className="text-white font-bold text-2xl mb-2">Webinar Ended</h2>
-                    <p className="text-white/50 text-sm leading-relaxed">
+                    <h2 className="text-foreground font-bold text-2xl mb-2">Webinar Ended</h2>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
                       Thank you for joining! The session has ended.
                     </p>
                   </div>
-                  <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl px-5 py-3 text-center">
-                    <p className="text-white/40 text-xs mb-1">Duration watched</p>
-                    <p className="text-white font-bold font-mono text-lg">{fmt(elapsed)}</p>
+                  <div className="bg-white border border-slate-200 rounded-2xl px-5 py-3 text-center">
+                    <p className="text-muted-foreground text-xs mb-1">Duration watched</p>
+                    <p className="text-foreground font-bold font-mono text-lg">{fmt(elapsed)}</p>
                   </div>
                   <button
                     onClick={() => window.history.back()}
-                    className="w-full py-3.5 rounded-2xl text-sm font-bold text-white bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 shadow-lg shadow-violet-500/20 transition-all hover:scale-[1.02]"
+                    className="w-full py-3.5 rounded-2xl text-sm font-bold text-white bg-gradient-to-r from-[#1d6fe8] to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02]"
                   >
                     ← Back to Home
                   </button>
@@ -577,7 +577,7 @@ export default function WatchPage({
             <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
               <button
                 onClick={() => setShowLeave(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-sm border border-white/10 text-white/70 hover:text-white hover:bg-red-500/20 hover:border-red-500/30 transition-all text-xs font-medium"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-sm border border-slate-200 text-foreground hover:text-foreground hover:bg-red-500/20 hover:border-red-500/30 transition-all text-xs font-medium"
               >← Leave</button>
               {sseStatus === 'error' && (
                 <span className="text-amber-400 text-xs bg-black/50 backdrop-blur-sm px-2 py-1 rounded-xl border border-amber-500/20 animate-pulse">
@@ -605,14 +605,14 @@ export default function WatchPage({
                 </div>
               </div>
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-16 pb-4 px-4 pointer-events-auto">
-                <p className="text-white/60 text-xs font-medium truncate">{webinarTitle}</p>
+                <p className="text-muted-foreground text-xs font-medium truncate">{webinarTitle}</p>
               </div>
             </div>
           </div>
 
-          <div className="flex-shrink-0 bg-[#0d0d14]/95 backdrop-blur-sm border-t border-white/[0.06] px-4 py-2.5 flex items-center gap-2 z-20">
+          <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-2.5 flex items-center gap-2 z-20">
             <div className="flex items-center gap-1.5 flex-1">
-              <span className="text-white/30 text-[10px] font-semibold uppercase tracking-wider mr-1">React</span>
+              <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider mr-1">React</span>
               {REACTIONS.map((emoji) => (
                 <button
                   key={emoji}
@@ -629,7 +629,7 @@ export default function WatchPage({
               className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
                 handRaised
                   ? 'bg-amber-500/20 border-amber-500/40 text-amber-400 animate-pulse'
-                  : 'bg-white/[0.04] border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.08]'
+                  : 'bg-white border-slate-200 text-muted-foreground hover:text-foreground hover:bg-white/[0.08]'
               }`}
               title={handRaised ? 'Lower hand' : 'Raise hand'}
             >
@@ -640,8 +640,8 @@ export default function WatchPage({
         </div>
 
         {panelOpen && (
-          <div className="hidden md:flex w-[300px] xl:w-80 border-l border-white/[0.06] bg-[#0d0d14] flex-col flex-shrink-0 overflow-hidden">
-            <div className="flex border-b border-white/[0.05] flex-shrink-0">
+          <div className="hidden md:flex w-[300px] xl:w-80 border-l border-slate-200 bg-white flex-col flex-shrink-0 overflow-hidden">
+            <div className="flex border-b border-slate-200 flex-shrink-0">
               {PANEL_TABS.map((t) => {
                 if (t.id === 'chat' && chat === '0') return null;
                 if (t.id === 'polls' && pollsOpt === '0') return null;
@@ -651,11 +651,11 @@ export default function WatchPage({
                   <button
                     key={t.id}
                     onClick={() => { setActiveTab(t.id); setUnread((p) => ({ ...p, [t.id]: 0 })); }}
-                    className={`relative flex-1 py-2.5 text-xs font-medium flex flex-col items-center gap-0.5 transition-colors ${activeTab === t.id ? 'text-violet-400 border-b-2 border-violet-500' : 'text-white/30 hover:text-white/60'}`}
+                    className={`relative flex-1 py-2.5 text-xs font-medium flex flex-col items-center gap-0.5 transition-colors ${activeTab === t.id ? 'text-[#1d6fe8] border-b-2 border-[#1d6fe8]' : 'text-muted-foreground hover:text-muted-foreground'}`}
                   >
                     <span className="text-sm">{t.icon}</span>
                     <span className="capitalize">{t.label}</span>
-                    {count > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[8px] flex items-center justify-center">{count > 9 ? '9+' : count}</span>}
+                    {count > 0 && <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-foreground text-[8px] flex items-center justify-center">{count > 9 ? '9+' : count}</span>}
                   </button>
                 );
               })}
@@ -669,15 +669,15 @@ export default function WatchPage({
       </div>
 
       {/* ════ MOBILE NAV ════ */}
-      <div className="md:hidden flex border-t border-white/[0.06] bg-[#0d0d14] flex-shrink-0">
+      <div className="md:hidden flex border-t border-slate-200 bg-white flex-shrink-0">
         {(['chat', 'polls'] as const).map((t) => {
           const badge = t === 'chat' ? unread.chat : unread.polls;
           return (
             <button key={t} onClick={() => setActiveTab((p) => p === t ? null : t)}
-              className={`relative flex-1 py-2.5 flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${activeTab === t ? 'text-violet-400' : 'text-white/30'}`}>
+              className={`relative flex-1 py-2.5 flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${activeTab === t ? 'text-[#1d6fe8]' : 'text-muted-foreground'}`}>
               <span className="text-lg">{t === 'chat' ? '💬' : '📊'}</span>
               <span className="capitalize">{t}</span>
-              {badge > 0 && <span className="absolute top-1.5 right-4 w-4 h-4 bg-red-500 rounded-full text-white text-[8px] flex items-center justify-center">{badge > 9 ? '9+' : badge}</span>}
+              {badge > 0 && <span className="absolute top-1.5 right-4 w-4 h-4 bg-red-500 rounded-full text-foreground text-[8px] flex items-center justify-center">{badge > 9 ? '9+' : badge}</span>}
             </button>
           );
         })}
@@ -685,7 +685,7 @@ export default function WatchPage({
 
       {/* ════ MOBILE SHEET ════ */}
       {panelOpen && (
-        <div className="md:hidden fixed inset-x-0 bottom-14 h-[55vh] bg-[#0d0d14] border-t border-white/[0.08] rounded-t-2xl z-30 flex flex-col overflow-hidden shadow-2xl">
+        <div className="md:hidden fixed inset-x-0 bottom-14 h-[55vh] bg-white border-t border-slate-200 rounded-t-2xl z-30 flex flex-col overflow-hidden shadow-2xl">
           <div className="flex justify-center pt-2.5 pb-1"><div className="w-10 h-1 bg-white/20 rounded-full" /></div>
           <div className="flex-1 overflow-hidden flex flex-col">
             {activeTab === 'chat'  && <ChatTab messages={messages} onSend={(m) => void sendChat(m)} onReact={(e) => void sendReaction(e)} displayName={displayName} />}
@@ -700,16 +700,16 @@ export default function WatchPage({
       {/* ════ LEAVE MODAL ════ */}
       {showLeave && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-[#0d0d14] border border-white/10 rounded-2xl p-6 w-[280px] shadow-2xl">
-            <p className="text-white font-bold text-base text-center mb-1">Leave Webinar?</p>
-            <p className="text-white/40 text-xs text-center mb-5">You can rejoin using the same link.</p>
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 w-[280px] shadow-2xl">
+            <p className="text-foreground font-bold text-base text-center mb-1">Leave Webinar?</p>
+            <p className="text-muted-foreground text-xs text-center mb-5">You can rejoin using the same link.</p>
             <div className="flex flex-col gap-2">
               <button onClick={() => { esRef.current?.close(); window.history.back(); }}
-                className="w-full py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-500 transition-colors">
+                className="w-full py-3 rounded-xl text-sm font-bold text-foreground bg-red-600 hover:bg-red-500 transition-colors">
                 Leave Session
               </button>
               <button onClick={() => setShowLeave(false)}
-                className="w-full py-3 rounded-xl text-sm font-medium text-white/60 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-colors">
+                className="w-full py-3 rounded-xl text-sm font-medium text-muted-foreground bg-white hover:bg-white/[0.08] border border-slate-200 transition-colors">
                 Stay
               </button>
             </div>
