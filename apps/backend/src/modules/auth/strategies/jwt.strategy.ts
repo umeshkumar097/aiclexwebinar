@@ -4,6 +4,10 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import type { AppConfig } from '../../../config/configuration';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User, UserStatus } from '../entities/user.entity';
+import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
 
 export interface JwtPayload {
   sub: string;       // userId
@@ -27,7 +31,10 @@ export interface AuthenticatedUser {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(configService: ConfigService<AppConfig, true>) {
+  constructor(
+    configService: ConfigService<AppConfig, true>,
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+  ) {
     const publicKey = configService.get('jwt.publicKey', { infer: true });
 
     super({
@@ -38,7 +45,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  validate(payload: JwtPayload): AuthenticatedUser {
+  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
+    const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+    if (!user || user.status === UserStatus.DELETED || user.status === UserStatus.SUSPENDED) {
+      throw new UnauthorizedException('Session invalid or account suspended');
+    }
+    
+    if (!user.emailVerifiedAt) {
+      throw new ForbiddenException('Please verify your email address.');
+    }
+
     return {
       userId: payload.sub,
       email: payload.email,
