@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Video, Cloud, Upload, Play, Link as LinkIcon, Trash2, ArrowRight, Download } from 'lucide-react';
 import { webinarApi, type Webinar } from '@/lib/api';
+import { useToast } from '@/components/ui/toast-provider';
 
 export default function RecordingsPage() {
+  const { success, error: toastError } = useToast();
   const [webinars, setWebinars] = useState<Webinar[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -83,12 +85,12 @@ export default function RecordingsPage() {
       });
 
       // 3. Refresh list — videoUrl was already saved by backend proxy endpoint
-      alert('✅ Recording uploaded successfully!');
+      success('Video uploaded!', 'Your recording is ready to use in Semi-Live sessions.');
       void fetchWebinars();
 
     } catch (err) {
       console.error('File upload failed:', err);
-      alert('Upload failed: ' + (err instanceof Error ? err.message : String(err)));
+      toastError('Upload failed', err instanceof Error ? err.message : String(err));
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -100,7 +102,7 @@ export default function RecordingsPage() {
 
   // Delete recording reference (clear videoUrl / replayUrl or delete draft)
   const handleDelete = async (webinarId: string) => {
-    if (!confirm('Are you sure you want to delete this recording?')) return;
+    if (!window.confirm('Are you sure you want to delete this recording?')) return;
     try {
       const w = webinars.find((x) => x.id === webinarId);
       if (w?.status === 'draft') {
