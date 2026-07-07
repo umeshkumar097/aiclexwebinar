@@ -376,6 +376,13 @@ export const webinarApi = {
       { method: 'POST', body: JSON.stringify({ filename, contentType }) },
     ),
 
+  /** Presigned R2 upload URL for images (thumbnails) */
+  getImageUploadUrl: (id: string, filename: string, contentType: string) =>
+    request<{ uploadUrl: string; fileKey: string; publicUrl: string }>(
+      `/webinars/${id}/image-upload-url`,
+      { method: 'POST', body: JSON.stringify({ filename, contentType }) },
+    ),
+
 
   /** Host broadcasts an event to all SSE-connected attendees */
   broadcast: (id: string, type: string, data: Record<string, unknown>) =>

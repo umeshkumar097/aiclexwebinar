@@ -688,25 +688,94 @@ function CreateWebinarForm() {
                 <div className="py-3 space-y-2 border-t border-white/[0.05]">
                   <p className="text-sm font-medium text-white">Waiting Room Thumbnail <span className="text-white/30 font-normal text-xs">(optional)</span></p>
                   <p className="text-xs text-white/40">Image shown to attendees while they wait for host approval. Leave blank to use the default.</p>
-                  <input
-                    type="url"
-                    value={form.waitingThumbnailUrl}
-                    onChange={(e) => update({ waitingThumbnailUrl: e.target.value })}
-                    placeholder="https://your-image-url.com/thumbnail.jpg"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-violet-500/60 transition-all"
-                  />
+                  
+                  <div className="flex items-center gap-3">
+                    <label className="cursor-pointer">
+                      <span className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 text-white/70 hover:text-white transition-all">
+                        <Upload className="w-4 h-4" /> Upload Image
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          
+                          setUploading(true);
+                          try {
+                            // 1. Ensure we have a draft ID if it doesn't exist
+                            let currentId = draftWebinarIdRef.current;
+                            if (!currentId) {
+                              const draft = await webinarApi.create({
+                                title: form.title.trim() || 'Draft Webinar',
+                                mode: form.mode,
+                              });
+                              draftWebinarIdRef.current = draft.id;
+                              currentId = draft.id;
+                            }
+                            
+                            // 2. Get presigned upload URL
+                            const { uploadUrl, publicUrl } = await webinarApi.getImageUploadUrl(
+                              currentId,
+                              file.name,
+                              file.type || 'image/jpeg'
+                            );
+                            
+                            // 3. Upload to R2
+                            await new Promise<void>((resolve, reject) => {
+                              const xhr = new XMLHttpRequest();
+                              xhr.open('PUT', uploadUrl);
+                              xhr.setRequestHeader('Content-Type', file.type || 'image/jpeg');
+                              xhr.onload = () => {
+                                if (xhr.status >= 200 && xhr.status < 300) resolve();
+                                else reject(new Error(`Failed with status ${xhr.status}`));
+                              };
+                              xhr.onerror = () => reject(new Error('Network upload error'));
+                              xhr.send(file);
+                            });
+                            
+                            update({ waitingThumbnailUrl: publicUrl });
+                            showToast('Thumbnail uploaded successfully!');
+                          } catch (err) {
+                            console.error('Thumbnail upload failed:', err);
+                            showToast('Failed to upload thumbnail', false);
+                          } finally {
+                            setUploading(false);
+                          }
+                        }}
+                        disabled={uploading}
+                      />
+                    </label>
+                    
+                    <input
+                      type="url"
+                      value={form.waitingThumbnailUrl}
+                      onChange={(e) => update({ waitingThumbnailUrl: e.target.value })}
+                      placeholder="Or enter image URL..."
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/30 text-sm focus:outline-none focus:border-violet-500/60 transition-all"
+                    />
+                  </div>
+
                   {form.waitingThumbnailUrl && (
-                    <div className="relative rounded-xl overflow-hidden border border-white/10 aspect-video bg-black">
+                    <div className="relative mt-2 rounded-xl overflow-hidden border border-white/10 aspect-video bg-black max-w-sm">
                       <img
                         src={form.waitingThumbnailUrl}
                         alt="Waiting room thumbnail preview"
                         className="w-full h-full object-cover"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
+                      <button
+                        type="button"
+                        onClick={() => update({ waitingThumbnailUrl: '' })}
+                        className="absolute top-2 right-2 bg-black/60 hover:bg-red-500/80 text-white rounded-full p-1.5 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
                     </div>
                   )}
                   {!form.waitingThumbnailUrl && (
-                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] aspect-video flex items-center justify-center">
+                    <div className="rounded-xl mt-2 border border-white/[0.06] bg-white/[0.02] aspect-video max-w-sm flex items-center justify-center">
                       <p className="text-white/20 text-xs text-center px-4">Default Zonvo waiting room thumbnail will be used</p>
                     </div>
                   )}

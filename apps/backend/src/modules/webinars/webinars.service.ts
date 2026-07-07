@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindManyOptions, ILike, Raw } from 'typeorm';
-import { AccessToken } from 'livekit-server-sdk';
+import { AccessToken, EgressClient, EncodedFileOutput, S3Upload } from 'livekit-server-sdk';
 
 import { Webinar, WebinarStatus, WebinarMode } from './entities/webinar.entity';
 
@@ -140,6 +140,40 @@ export class WebinarsService {
     if (settings.enableRecording) {
       settings.recordingStartedAt = new Date().toISOString();
       settings.recordingActive = true;
+      
+      try {
+        const egressClient = new EgressClient(
+          process.env.LIVEKIT_URL ?? 'wss://localhost:7880',
+          process.env.LIVEKIT_API_KEY ?? 'devkey',
+          process.env.LIVEKIT_API_SECRET ?? 'devsecret',
+        );
+        
+        const fileOutput = new EncodedFileOutput({
+          filepath: `recordings/${id}/{room_name}-{time}.mp4`,
+          s3: new S3Upload({
+            accessKey: process.env.R2_ACCESS_KEY_ID ?? '',
+            secret: process.env.R2_SECRET_ACCESS_KEY ?? '',
+            region: 'auto',
+            endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+            bucket: process.env.R2_BUCKET_NAME ?? 'zonvo-videos',
+          })
+        });
+        
+        const info = await egressClient.startRoomCompositeEgress(
+          webinar.livekitRoom,
+          {
+            file: fileOutput,
+          },
+          {
+            layout: settings.enableWatermark ? 'watermark' : 'default',
+          }
+        );
+        
+        settings.egressId = info.egressId;
+      } catch (err) {
+        console.error('Failed to start LiveKit Egress recording:', err);
+      }
+
       webinar.settings = settings;
     }
 
@@ -150,6 +184,23 @@ export class WebinarsService {
     const webinar = await this.findOne(id, userId, orgId);
     webinar.status = WebinarStatus.ENDED;
     webinar.endedAt = new Date();
+
+    const settings = webinar.settings ?? {};
+    if (settings.egressId) {
+      try {
+        const egressClient = new EgressClient(
+          process.env.LIVEKIT_URL ?? 'wss://localhost:7880',
+          process.env.LIVEKIT_API_KEY ?? 'devkey',
+          process.env.LIVEKIT_API_SECRET ?? 'devsecret',
+        );
+        await egressClient.stopEgress(settings.egressId);
+        settings.recordingActive = false;
+        webinar.settings = settings;
+      } catch (err) {
+         console.error('Failed to stop egress:', err);
+      }
+    }
+
     return this.webinarRepo.save(webinar);
   }
 

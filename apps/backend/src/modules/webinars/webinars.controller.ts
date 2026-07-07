@@ -380,6 +380,29 @@ export class WebinarsController {
     return { success: true, data: result };
   }
 
+  // ── POST /api/v1/webinars/:id/image-upload-url ───────────────────────────
+  // Returns a presigned R2 PUT URL so the host can upload an image directly
+  @Post(':id/image-upload-url')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getImageUploadUrl(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: { filename: string; contentType?: string },
+  ) {
+    // Verify ownership
+    await this.webinarsService.findOne(id, user.userId, user.orgId ?? null);
+
+    const result = await this.r2.getUploadUrl(
+      'thumbnails',
+      id,
+      body.filename ?? 'image.jpg',
+      body.contentType ?? 'image/jpeg',
+      3600, // 1 hour to upload
+    );
+    return { success: true, data: result };
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   // SSE — Real-time events
   // ══════════════════════════════════════════════════════════════════════════
