@@ -23,6 +23,7 @@ import { LicensesModule } from './modules/licenses/licenses.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { WebinarsModule } from './modules/webinars/webinars.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 @Module({
   imports: [
@@ -90,6 +91,7 @@ import { WebinarsModule } from './modules/webinars/webinars.module';
     WebhooksModule,
     FeatureFlagsModule,
     WebinarsModule,
+    BillingModule,
 
     // ─── System ──────────────────────────────────────────────────────────────
     HealthModule,

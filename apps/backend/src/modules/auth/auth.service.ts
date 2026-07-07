@@ -405,7 +405,7 @@ export class AuthService {
       throw new BadRequestException('Verification token is invalid or has expired');
     }
 
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({ where: { id: userId }, relations: ['profile'] });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -427,6 +427,18 @@ export class AuthService {
       resourceId: user.id,
       actorId: user.id,
     });
+
+    // Send welcome "account activated" email
+    const frontendUrl = this.configService.get('app.frontendUrl', { infer: true });
+    await this.notificationsService.queue(
+      'email',
+      user.email,
+      'auth.account_activated',
+      {
+        firstName: user.profile?.firstName ?? 'there',
+        dashboardLink: `${frontendUrl}/dashboard`,
+      },
+    );
   }
 
   // ─── Change Password ─────────────────────────────────────────────────────────
