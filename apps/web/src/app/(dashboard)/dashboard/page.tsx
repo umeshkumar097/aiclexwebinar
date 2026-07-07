@@ -186,7 +186,7 @@ export default function DashboardPage(): React.ReactElement {
           <Link
             href="/dashboard/webinars/new"
             id="dashboard-create-webinar"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white btn-glow flex-shrink-0 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-foreground btn-glow flex-shrink-0 transition-all"
             style={{
               background: 'linear-gradient(135deg, #5271ff, #5271ff)',
             }}
@@ -300,7 +300,7 @@ export default function DashboardPage(): React.ReactElement {
                   <Link
                     href="/dashboard/webinars/new"
                     id="empty-state-create-webinar"
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white btn-glow mt-2"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-foreground btn-glow mt-2"
                     style={{
                       background: 'linear-gradient(135deg, #5271ff, #5271ff)',
                     }}

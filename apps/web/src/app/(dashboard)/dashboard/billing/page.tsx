@@ -226,7 +226,7 @@ export default function BillingPage(): React.ReactElement {
                     onClick={() =>
                       showToast(`${plan.name} plan is Coming Soon! We'll notify you when it's available.`)
                     }
-                    className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-sm hover:opacity-90 active:scale-[0.98]"
+                    className="w-full py-2.5 rounded-xl text-sm font-semibold text-foreground transition-all shadow-sm hover:opacity-90 active:scale-[0.98]"
                     style={{
                       background: `linear-gradient(135deg, ${plan.iconColor}, ${
                         plan.id === 'plan-pro'

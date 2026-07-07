@@ -119,12 +119,12 @@ export default function RecordingsPage() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6 text-white">
+    <div className="p-6 max-w-6xl mx-auto space-y-6 text-foreground">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.06] pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Recordings and Transcripts</h1>
-          <p className="text-white/40 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Manage your cloud recordings, uploads, and assets to use directly in Semi-Live sessions.
           </p>
         </div>
@@ -147,7 +147,7 @@ export default function RecordingsPage() {
 
       {/* Uploading progress overlay */}
       {uploading && (
-        <div className="bg-[#0d0d14] border border-white/[0.08] rounded-2xl p-5 space-y-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
@@ -155,7 +155,7 @@ export default function RecordingsPage() {
             </div>
             <span className="text-xs font-bold text-violet-400">{uploadProgress}%</span>
           </div>
-          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-violet-500 transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
@@ -170,12 +170,12 @@ export default function RecordingsPage() {
           <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : recordings.length === 0 ? (
-        <div className="border border-dashed border-white/10 rounded-2xl p-12 text-center bg-[#0d0d14]/40">
-          <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Video className="w-6 h-6 text-white/30" />
+        <div className="border border-dashed border-slate-200 rounded-2xl p-12 text-center bg-slate-50">
+          <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <Video className="w-6 h-6 text-muted-foreground" />
           </div>
-          <h3 className="font-semibold text-white/80">No recordings found</h3>
-          <p className="text-white/30 text-xs mt-1 max-w-sm mx-auto">
+          <h3 className="font-semibold text-foreground">No recordings found</h3>
+          <p className="text-muted-foreground text-xs mt-1 max-w-sm mx-auto">
             Host live webinars to auto-save recordings, or upload direct video files above to schedule them in Semi-Live mode.
           </p>
         </div>
@@ -186,26 +186,26 @@ export default function RecordingsPage() {
             return (
               <div
                 key={rec.id}
-                className="bg-[#0d0d14]/80 border border-white/[0.06] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-white/[0.12] transition-colors"
+                className="bg-white/80 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-white/[0.12] transition-colors"
               >
                 <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                  <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center flex-shrink-0">
                     <Cloud className="w-6 h-6 text-violet-400" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-white truncate text-sm">{rec.title}</h4>
-                      <span className="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/50">
+                      <h4 className="font-semibold text-foreground truncate text-sm">{rec.title}</h4>
+                      <span className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200 text-muted-foreground">
                         {rec.mode === 'semi_live' ? 'Semi-Live Asset' : 'Live Recording'}
                       </span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-semibold">
                         MP4
                       </span>
                     </div>
-                    <p className="text-white/30 text-xs mt-0.5 truncate max-w-md">
+                    <p className="text-muted-foreground text-xs mt-0.5 truncate max-w-md">
                       Webinar ID: {rec.id}
                     </p>
-                    <p className="text-white/20 text-[10px] mt-1 font-mono">
+                    <p className="text-muted-foreground text-[10px] mt-1 font-mono">
                       {url}
                     </p>
                   </div>
@@ -216,7 +216,7 @@ export default function RecordingsPage() {
                     <>
                       <button
                         onClick={() => setPreviewVideoUrl(url)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 border border-white/10 hover:bg-white/10 flex items-center gap-1.5 transition-colors"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 border border-slate-200 hover:bg-slate-200 flex items-center gap-1.5 transition-colors"
                       >
                         <Play className="w-3.5 h-3.5" />
                         Play
@@ -226,7 +226,7 @@ export default function RecordingsPage() {
                           void navigator.clipboard.writeText(url);
                           alert('Copied replay URL to clipboard!');
                         }}
-                        className="p-2 rounded-lg text-white/50 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                        className="p-2 rounded-lg text-muted-foreground hover:text-foreground bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors"
                         title="Copy URL"
                       >
                         <LinkIcon className="w-3.5 h-3.5" />
@@ -236,7 +236,7 @@ export default function RecordingsPage() {
                         download
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 border border-white/10 hover:bg-white/10 flex items-center gap-1.5 transition-colors text-white/70 hover:text-white"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 border border-slate-200 hover:bg-slate-200 flex items-center gap-1.5 transition-colors text-foreground hover:text-foreground"
                         title="Download Recording"
                       >
                         <Download className="w-3.5 h-3.5" />
@@ -272,10 +272,10 @@ export default function RecordingsPage() {
       {/* Video Preview Modal */}
       {previewVideoUrl && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0d0d14] border border-white/10 rounded-2xl overflow-hidden max-w-3xl w-full shadow-2xl relative">
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden max-w-3xl w-full shadow-2xl relative">
             <button
               onClick={() => setPreviewVideoUrl(null)}
-              className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-black/60 text-white/70 hover:text-white flex items-center justify-center text-sm transition-colors border border-white/10"
+              className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-black/60 text-foreground hover:text-foreground flex items-center justify-center text-sm transition-colors border border-slate-200"
             >
               ✕
             </button>

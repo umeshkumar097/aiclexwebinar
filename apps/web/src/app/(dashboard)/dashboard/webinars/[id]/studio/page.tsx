@@ -55,8 +55,8 @@ function CtrlBtn({ icon, label, active = true, danger = false, onClick, disabled
         danger
           ? 'bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400'
           : active
-          ? 'bg-white/10 hover:bg-white/15 border border-white/10 text-white'
-          : 'bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] text-white/40 hover:text-white/60'
+          ? 'bg-slate-200 hover:bg-white/15 border border-slate-200 text-white'
+          : 'bg-slate-50 hover:bg-slate-100 border border-slate-200 text-muted-foreground hover:text-foreground'
       }`}
     >
       <span className="text-xl">{icon}</span>
@@ -961,7 +961,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
       <div className="fixed inset-0 bg-[#08080f] flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/50 text-sm">Connecting to Live Studio backstage…</p>
+          <p className="text-muted-foreground text-sm">Connecting to Live Studio backstage…</p>
         </div>
       </div>
     );
@@ -972,14 +972,14 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="fixed inset-0 bg-[#08080f] flex flex-col overflow-hidden z-50 select-none">
       {/* ── Top Bar ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#0d0d14] flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white flex-shrink-0">
         <div className="flex items-center gap-3">
           <Link
             href={`/dashboard/webinars/${id}`}
-            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all font-bold"
+            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all font-bold"
           >←</Link>
           <div>
-            <p className="text-white font-semibold text-sm leading-tight truncate max-w-xs">{webinar?.title}</p>
+            <p className="text-foreground font-semibold text-sm leading-tight truncate max-w-xs">{webinar?.title}</p>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px] text-violet-400 font-bold bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20">
                 🔴 Studio Control
@@ -1007,10 +1007,10 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
             <span className="text-red-400 font-bold text-xs tracking-wide">LIVE</span>
             <span className="text-red-400/80 text-xs font-mono">{formatDuration(elapsed)}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-1.5">
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
             <span className="text-xs">👥</span>
-            <span className="text-white font-semibold text-sm">{participantCount}</span>
-            <span className="text-white/30 text-xs">watching</span>
+            <span className="text-foreground font-semibold text-sm">{participantCount}</span>
+            <span className="text-muted-foreground text-xs">watching</span>
           </div>
           <button
             onClick={() => setShowEndConfirm(true)}
@@ -1040,7 +1040,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                   />
                 )}
                 {!semiTakeover && !webinar?.videoUrl && (
-                  <div className="text-white/40 text-xs">No video source configured.</div>
+                  <div className="text-muted-foreground text-xs">No video source configured.</div>
                 )}
 
                 {/* Live camera takeover stage */}
@@ -1055,7 +1055,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                     />
                     <div className="absolute top-3 left-3 flex items-center gap-2 bg-red-600/90 backdrop-blur-sm rounded-xl px-3 py-1.5">
                       <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                      <span className="text-white text-xs font-bold tracking-wide">YOU ARE LIVE</span>
+                      <span className="text-foreground text-xs font-bold tracking-wide">YOU ARE LIVE</span>
                     </div>
                   </>
                 )}
@@ -1081,8 +1081,8 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                 {takeoverConnecting && (
                   <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-20">
                     <div className="w-10 h-10 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-white font-semibold text-sm">Going Live…</p>
-                    <p className="text-white/40 text-xs">Connecting your camera & mic</p>
+                    <p className="text-foreground font-semibold text-sm">Going Live…</p>
+                    <p className="text-muted-foreground text-xs">Connecting your camera & mic</p>
                   </div>
                 )}
               </>
@@ -1121,7 +1121,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                 {spotlightSid && (
                   <div className="absolute top-3 right-3 flex items-center gap-2 bg-amber-500/90 backdrop-blur-sm rounded-xl px-3 py-1.5">
                     <span className="text-sm">📌</span>
-                    <span className="text-white text-xs font-bold">
+                    <span className="text-foreground text-xs font-bold">
                       {viewers.find((v) => v.sid === spotlightSid)?.name ?? 'Spotlight'}
                     </span>
                   </div>
@@ -1130,24 +1130,24 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
             )}
 
             {!isSemi && !cameraOn && (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-[#0d0d14]">
+              <div className="w-full h-full flex flex-col items-center justify-center bg-white">
                 <div className="w-20 h-20 rounded-full bg-violet-600 flex items-center justify-center text-3xl font-bold">H</div>
-                <p className="text-white/40 text-xs mt-2">Camera off</p>
+                <p className="text-muted-foreground text-xs mt-2">Camera off</p>
               </div>
             )}
           </div>
 
           {/* Bottom controls */}
-          <div className="bg-[#0d0d14] border-t border-white/[0.06] flex-shrink-0">
+          <div className="bg-white border-t border-slate-200 flex-shrink-0">
             {/* Device selector panel (F-026) */}
             {showDevicePanel && !isSemi && (
-              <div className="px-4 py-3 border-b border-white/[0.06] bg-[#0a0a12] flex flex-wrap gap-3 items-center">
+              <div className="px-4 py-3 border-b border-slate-200 bg-[#0a0a12] flex flex-wrap gap-3 items-center">
                 <div className="flex items-center gap-2">
-                  <span className="text-white/40 text-[10px] font-semibold uppercase">Camera</span>
+                  <span className="text-muted-foreground text-[10px] font-semibold uppercase">Camera</span>
                   <select
                     value={selectedCamera}
                     onChange={(e) => void switchCamera(e.target.value)}
-                    className="bg-white/[0.06] border border-white/[0.10] rounded-xl px-2 py-1 text-white text-xs focus:outline-none max-w-[180px]"
+                    className="bg-slate-100 border border-white/[0.10] rounded-xl px-2 py-1 text-foreground text-xs focus:outline-none max-w-[180px]"
                   >
                     {cameras.map((c) => (
                       <option key={c.deviceId} value={c.deviceId}>{c.label || `Camera ${c.deviceId.slice(0,6)}`}</option>
@@ -1155,11 +1155,11 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-white/40 text-[10px] font-semibold uppercase">Mic</span>
+                  <span className="text-muted-foreground text-[10px] font-semibold uppercase">Mic</span>
                   <select
                     value={selectedMic}
                     onChange={(e) => void switchMic(e.target.value)}
-                    className="bg-white/[0.06] border border-white/[0.10] rounded-xl px-2 py-1 text-white text-xs focus:outline-none max-w-[180px]"
+                    className="bg-slate-100 border border-white/[0.10] rounded-xl px-2 py-1 text-foreground text-xs focus:outline-none max-w-[180px]"
                   >
                     {mics.map((m) => (
                       <option key={m.deviceId} value={m.deviceId}>{m.label || `Mic ${m.deviceId.slice(0,6)}`}</option>
@@ -1167,7 +1167,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                   </select>
                 </div>
                 <div className="flex items-center gap-2 ml-auto">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${micOn ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-white/30 border-white/10'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${micOn ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-muted-foreground border-slate-200'}`}>
                     {micOn ? '🎤 Noise Cancel ON' : '🔇 Mic Off'}
                   </span>
                 </div>
@@ -1242,14 +1242,14 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                 <button
                   onClick={() => setShowTakeoverModal(true)}
                   disabled={takeoverConnecting}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-bold text-xs shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-foreground font-bold text-xs shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                 >
                   <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                   Go Live with Camera
                 </button>
               </>
             )}
-            <div className="w-px h-10 bg-white/[0.06] mx-1" />
+            <div className="w-px h-10 bg-slate-100 mx-1" />
             <CtrlBtn
               icon={recording ? '🔴' : '⏺'}
               label={recording ? 'Recording' : 'Record'}
@@ -1263,14 +1263,14 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Dynamic Sidebar Control Panel */}
-        <div className="w-[320px] border-l border-white/[0.06] bg-[#0d0d14] flex flex-col overflow-hidden flex-shrink-0">
-          <div className="flex border-b border-white/[0.06] flex-shrink-0">
+        <div className="w-[320px] border-l border-slate-200 bg-white flex flex-col overflow-hidden flex-shrink-0">
+          <div className="flex border-b border-slate-200 flex-shrink-0">
             {(['chat', 'viewers', 'control'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActivePanel(tab)}
                 className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider transition-all border-b-2 ${
-                  activePanel === tab ? 'text-violet-400 border-violet-500 bg-white/[0.01]' : 'text-white/30 border-transparent hover:text-white/50'
+                  activePanel === tab ? 'text-violet-400 border-violet-500 bg-white/[0.01]' : 'text-muted-foreground border-transparent hover:text-muted-foreground'
                 }`}
               >
                 {tab}
@@ -1283,15 +1283,15 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
             {activePanel === 'chat' && (
               <div className="flex flex-col h-full space-y-3">
                 <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
-                  {messages.length === 0 && <div className="text-center py-10 text-white/20">No messages yet.</div>}
+                  {messages.length === 0 && <div className="text-center py-10 text-muted-foreground">No messages yet.</div>}
                   {messages.map((msg) => (
                     <div key={msg.id} className={`flex gap-2 ${msg.isHost ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${msg.isHost ? 'bg-violet-600' : 'bg-white/10 text-white/60'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${msg.isHost ? 'bg-violet-600' : 'bg-slate-200 text-foreground'}`}>
                         {msg.avatar}
                       </div>
                       <div className={`flex-1 flex flex-col ${msg.isHost ? 'items-end' : 'items-start'}`}>
-                        <span className="text-[9px] text-white/30 mb-0.5">{msg.user}</span>
-                        <div className={`px-2.5 py-1.5 rounded-xl text-white/80 ${msg.isHost ? 'bg-violet-600/20 border border-violet-500/20' : 'bg-white/[0.04]'}`}>
+                        <span className="text-[9px] text-muted-foreground mb-0.5">{msg.user}</span>
+                        <div className={`px-2.5 py-1.5 rounded-xl text-foreground ${msg.isHost ? 'bg-violet-600/20 border border-violet-500/20' : 'bg-slate-50'}`}>
                           {msg.message}
                         </div>
                       </div>
@@ -1306,9 +1306,9 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && void sendMessage()}
                     placeholder="Message to attendees…"
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/20 focus:outline-none focus:border-violet-500/60"
+                    className="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-foreground placeholder-white/20 focus:outline-none focus:border-violet-500/60"
                   />
-                  <button onClick={sendMessage} className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center">↑</button>
+                  <button onClick={sendMessage} className="w-8 h-8 rounded-xl bg-violet-600 hover:bg-violet-500 text-foreground flex items-center justify-center">↑</button>
                 </div>
               </div>
             )}
@@ -1317,7 +1317,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
             {activePanel === 'viewers' && (
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-white/40">Live audience ({participantCount} total)</p>
+                  <p className="text-muted-foreground">Live audience ({participantCount} total)</p>
                   {raisedHands.size > 0 && (
                     <span className="flex items-center gap-1 text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg text-[10px] font-semibold animate-pulse">
                       ✋ {raisedHands.size} raised
@@ -1332,7 +1332,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                     </button>
                   )}
                 </div>
-                {viewers.length === 0 && <div className="text-center py-10 text-white/20">Waiting for attendees…</div>}
+                {viewers.length === 0 && <div className="text-center py-10 text-muted-foreground">Waiting for attendees…</div>}
                 {viewers.map((v) => {
                   const isMuted     = mutedSids.has(v.sid);
                   const isSpotlight = spotlightSid === v.sid;
@@ -1345,7 +1345,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                           ? 'bg-amber-500/10 border-amber-500/30 animate-pulse'
                           : isSpotlight
                           ? 'bg-amber-500/10 border-amber-500/25'
-                          : 'bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04]'
+                          : 'bg-slate-50 border-white/[0.04] hover:bg-slate-50'
                       }`}
                     >
                       <div className="w-6 h-6 rounded-full bg-violet-600 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
@@ -1373,7 +1373,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                           className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] transition-all ${
                             isSpotlight
                               ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
-                              : 'bg-white/[0.04] text-white/30 hover:text-amber-400 hover:bg-amber-500/10'
+                              : 'bg-slate-50 text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10'
                           }`}
                         >📌</button>
                         {/* F-027: Mute */}
@@ -1383,7 +1383,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                           className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] transition-all ${
                             isMuted
                               ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                              : 'bg-white/[0.04] text-white/30 hover:text-red-400 hover:bg-red-500/10'
+                              : 'bg-slate-50 text-muted-foreground hover:text-red-400 hover:bg-red-500/10'
                           }`}
                         >{isMuted ? '🔇' : '🎤'}</button>
                       </div>
@@ -1400,7 +1400,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                 {/* F-042/F-039/F-040: Video Playback Controls */}
                 {webinar?.mode === 'semi_live' && (
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-white/80 border-b border-white/[0.05] pb-1">🎬 Video Playback Control</h4>
+                    <h4 className="font-semibold text-foreground border-b border-white/[0.05] pb-1">🎬 Video Playback Control</h4>
 
                     {/* Pause / Resume */}
                     <div className="flex gap-2">
@@ -1431,7 +1431,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
                     {/* Seek bar */}
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[10px] text-white/40">
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
                         <span>Seek position</span>
                         <span>{Math.floor((videoRef.current?.currentTime ?? 0) / 60)}:{String(Math.floor((videoRef.current?.currentTime ?? 0) % 60)).padStart(2, '0')}</span>
                       </div>
@@ -1457,7 +1457,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
                     {/* F-044: Replay behavior */}
                     <div className="space-y-1.5">
-                      <label className="text-white/40 text-[10px] uppercase tracking-wider">End-of-video behavior</label>
+                      <label className="text-muted-foreground text-[10px] uppercase tracking-wider">End-of-video behavior</label>
                       <div className="grid grid-cols-3 gap-1.5">
                         {([
                           { v: 'stop',     label: '⏹ Stop',      desc: 'Show ended screen' },
@@ -1470,12 +1470,12 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                             className={`py-1.5 rounded-xl border text-[10px] font-semibold transition-all ${
                               replayBehavior === v
                                 ? 'bg-violet-600/20 border-violet-500/40 text-violet-300'
-                                : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:text-white/70'
+                                : 'bg-slate-50 border-slate-200 text-muted-foreground hover:text-foreground'
                             }`}
                           >{label}</button>
                         ))}
                       </div>
-                      <p className="text-white/20 text-[10px]">
+                      <p className="text-muted-foreground text-[10px]">
                         {replayBehavior === 'stop' && 'Video ends → shows thank you screen'}
                         {replayBehavior === 'loop' && 'Video restarts automatically in loop'}
                         {replayBehavior === 'auto_live' && 'Video ends → switches to your live camera'}
@@ -1493,7 +1493,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                           });
                         } catch {}
                       }}
-                      className="w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.06] font-semibold transition-colors"
+                      className="w-full py-2 rounded-xl bg-slate-50 border border-slate-200 text-muted-foreground hover:text-foreground hover:bg-slate-100 font-semibold transition-colors"
                     >
                       🔄 Force Sync All Viewers
                     </button>
@@ -1502,8 +1502,8 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
                 {/* Reactions Control */}
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-white/80 border-b border-white/[0.05] pb-1">Float Reactions</h4>
-                  <div className="flex gap-1.5 bg-white/[0.02] border border-white/[0.05] p-2 rounded-xl justify-around">
+                  <h4 className="font-semibold text-foreground border-b border-white/[0.05] pb-1">Float Reactions</h4>
+                  <div className="flex gap-1.5 bg-slate-50 border border-white/[0.05] p-2 rounded-xl justify-around">
                     {['👍', '❤️', '🔥', '😂'].map((emoji) => (
                       <button
                         key={emoji}
@@ -1516,13 +1516,13 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
                 {/* Announcement Control */}
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-white/80 border-b border-white/[0.05] pb-1">Broadcast Announcement</h4>
+                  <h4 className="font-semibold text-foreground border-b border-white/[0.05] pb-1">Broadcast Announcement</h4>
                   <textarea
                     value={announcementText}
                     onChange={(e) => setAnnouncementText(e.target.value)}
                     placeholder="Type header announcement message…"
                     rows={2}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white placeholder-white/20 focus:outline-none resize-none"
+                    className="w-full bg-slate-100 border border-slate-200 rounded-xl p-2.5 text-foreground placeholder-white/20 focus:outline-none resize-none"
                   />
                   <button
                     onClick={sendAnnouncement}
@@ -1533,11 +1533,11 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
                 {/* Poll Control */}
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-white/80 border-b border-white/[0.05] pb-1">Poll Controller</h4>
+                  <h4 className="font-semibold text-foreground border-b border-white/[0.05] pb-1">Poll Controller</h4>
                   {activePollId ? (
                     <div className="space-y-2 bg-violet-500/10 border border-violet-500/20 p-3 rounded-xl">
                       <p className="font-bold text-violet-400">Poll is active! 📊</p>
-                      <p className="text-[10px] text-white/60">Attendees can see and vote in real-time.</p>
+                      <p className="text-[10px] text-foreground">Attendees can see and vote in real-time.</p>
                       <button
                         onClick={endPoll}
                         className="w-full py-2 bg-red-600 hover:bg-red-500 rounded-xl font-semibold transition-colors mt-2"
@@ -1550,21 +1550,21 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                         value={pollQuestion}
                         onChange={(e) => setPollQuestion(e.target.value)}
                         placeholder="Poll Question?"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 placeholder-white/20 focus:outline-none"
+                        className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 placeholder-white/20 focus:outline-none"
                       />
                       <input
                         type="text"
                         value={pollOptions[0]}
                         onChange={(e) => setPollOptions([e.target.value, pollOptions[1]])}
                         placeholder="Option 1"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
+                        className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
                       />
                       <input
                         type="text"
                         value={pollOptions[1]}
                         onChange={(e) => setPollOptions([pollOptions[0], e.target.value])}
                         placeholder="Option 2"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
+                        className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
                       />
                       <button
                         onClick={startPoll}
@@ -1577,15 +1577,15 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
                 {/* Offer CTA Control */}
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-white/80 border-b border-white/[0.05] pb-1">Offer & CTA Controller</h4>
-                  <div className="space-y-2 bg-white/[0.02] border border-white/[0.05] p-3 rounded-xl">
+                  <h4 className="font-semibold text-foreground border-b border-white/[0.05] pb-1">Offer & CTA Controller</h4>
+                  <div className="space-y-2 bg-slate-50 border border-white/[0.05] p-3 rounded-xl">
                     <input
                       type="text"
                       value={ctaTitle}
                       onChange={(e) => setCtaTitle(e.target.value)}
                       placeholder="Offer title (e.g. 50% discount!)"
                       disabled={ctaActive}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
                     />
                     <input
                       type="text"
@@ -1593,7 +1593,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                       onChange={(e) => setCtaUrl(e.target.value)}
                       placeholder="Destination Checkout URL"
                       disabled={ctaActive}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
                     />
                     <input
                       type="text"
@@ -1601,7 +1601,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                       onChange={(e) => setCtaLabel(e.target.value)}
                       placeholder="Button Text (e.g. Buy Now)"
                       disabled={ctaActive}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
                     />
                     <div className="flex gap-2">
                       <input
@@ -1610,7 +1610,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                         onChange={(e) => setCtaPrice(e.target.value)}
                         placeholder="Price"
                         disabled={ctaActive}
-                        className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
+                        className="w-1/2 bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
                       />
                       <input
                         type="number"
@@ -1618,7 +1618,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                         onChange={(e) => setCtaTimer(e.target.value)}
                         placeholder="Seconds"
                         disabled={ctaActive}
-                        className="w-1/2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
+                        className="w-1/2 bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 placeholder-white/20 focus:outline-none text-[11px]"
                       />
                     </div>
                     <button
@@ -1650,14 +1650,14 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-[#0d0d14] border border-white/[0.10] rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl"
+              className="bg-white border border-white/[0.10] rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl"
             >
               <div className="text-center mb-6">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-600 to-rose-500 flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-red-500/30">
                   📹
                 </div>
-                <h3 className="text-white font-bold text-xl mb-2">Go Live with Camera?</h3>
-                <p className="text-white/50 text-sm leading-relaxed">
+                <h3 className="text-foreground font-bold text-xl mb-2">Go Live with Camera?</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   The pre-recorded video will stop. Your live camera and microphone will be visible to all attendees in real time.
                 </p>
               </div>
@@ -1671,13 +1671,13 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => void handleGoLiveTakeover()}
-                  className="w-full py-3.5 rounded-2xl text-sm font-bold text-white bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full py-3.5 rounded-2xl text-sm font-bold text-foreground bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   🔴 Yes, Go Live Now
                 </button>
                 <button
                   onClick={() => setShowTakeoverModal(false)}
-                  className="w-full py-3 rounded-2xl text-sm font-medium text-white/50 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all"
+                  className="w-full py-3 rounded-2xl text-sm font-medium text-muted-foreground hover:text-foreground bg-slate-50 hover:bg-white/[0.08] border border-slate-200 transition-all"
                 >
                   Cancel — Keep Video Playing
                 </button>
@@ -1691,13 +1691,13 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
       <AnimatePresence>
         {showEndConfirm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#0d0d14] border border-white/[0.08] rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white border border-slate-200 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
               <div className="text-4xl mb-4 text-center">⏹</div>
-              <h3 className="text-white font-bold text-lg text-center mb-2">End Live Session?</h3>
-              <p className="text-white/50 text-sm text-center mb-6">Duration: <strong className="text-white">{formatDuration(elapsed)}</strong> · {participantCount} viewers</p>
+              <h3 className="text-foreground font-bold text-lg text-center mb-2">End Live Session?</h3>
+              <p className="text-muted-foreground text-sm text-center mb-6">Duration: <strong className="text-foreground">{formatDuration(elapsed)}</strong> · {participantCount} viewers</p>
               <div className="flex gap-3">
-                <button onClick={() => setShowEndConfirm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/60 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all">Cancel</button>
-                <button onClick={() => { setShowEndConfirm(false); void handleEndSession(); }} disabled={ending} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 disabled:opacity-50 transition-all">
+                <button onClick={() => setShowEndConfirm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-foreground bg-slate-50 hover:bg-white/[0.08] border border-slate-200 transition-all">Cancel</button>
+                <button onClick={() => { setShowEndConfirm(false); void handleEndSession(); }} disabled={ending} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-foreground bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 disabled:opacity-50 transition-all">
                   {ending ? 'Ending…' : 'End Session'}
                 </button>
               </div>
