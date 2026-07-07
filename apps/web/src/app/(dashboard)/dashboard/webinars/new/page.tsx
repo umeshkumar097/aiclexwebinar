@@ -60,8 +60,6 @@ const TIMEZONES = [
   'UTC',
 ];
 
-const PRESET_TAGS = ['Marketing', 'Sales', 'Training', 'Product Demo', 'HR', 'Tech', 'Finance', 'Healthcare'];
-
 const DEFAULT_FORM: FormData = {
   title: '',
   description: '',
