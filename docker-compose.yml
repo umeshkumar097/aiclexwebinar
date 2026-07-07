@@ -1,0 +1,193 @@
+version: '3.9'
+
+services:
+  # ─── PostgreSQL ───────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: zonvo_postgres
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: zonvo_dev
+      POSTGRES_USER: zonvo
+      POSTGRES_PASSWORD: zonvo_dev_password_local
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U zonvo -d zonvo_dev']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis (App) ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: zonvo_redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis (LiveKit) ──────────────────────────────────────
+  redis_livekit:
+    image: redis:7-alpine
+    container_name: zonvo_redis_livekit
+    restart: unless-stopped
+    ports:
+      - '6380:6379'
+    command: redis-server --appendonly yes --maxmemory 256mb
+    volumes:
+      - redislivekitdata:/data
+
+  # ─── MinIO (Local Azure Blob substitute) ──────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: zonvo_minio
+    restart: unless-stopped
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: zonvo_minio
+      MINIO_ROOT_PASSWORD: zonvo_minio_secret
+    volumes:
+      - minidata:/data
+    command: server /data --console-address ':9001'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinIO bucket initializer (runs once)
+  minio_init:
+    image: minio/mc:latest
+    container_name: zonvo_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 zonvo_minio zonvo_minio_secret;
+      mc mb --ignore-existing local/zonvo-recordings-private;
+      mc mb --ignore-existing local/zonvo-resources-private;
+      mc mb --ignore-existing local/zonvo-assets-public;
+      mc mb --ignore-existing local/zonvo-exports-private;
+      mc mb --ignore-existing local/zonvo-thumbnails-private;
+      mc anonymous set public local/zonvo-assets-public;
+      echo 'MinIO buckets initialized';
+      "
+
+  # ─── LiveKit Server ───────────────────────────────────────
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: zonvo_livekit
+    restart: unless-stopped
+    ports:
+      - '7880:7880'
+      - '7881:7881'
+      - '7882:7882/udp'
+    environment:
+      - LIVEKIT_KEYS=devkey:devsecret
+    command: --dev --redis-host redis_livekit:6379
+    depends_on:
+      - redis_livekit
+
+  # ─── coturn (TURN/STUN) ───────────────────────────────────
+  coturn:
+    image: coturn/coturn:latest
+    container_name: zonvo_coturn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./infrastructure/docker/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+
+  # ─── NestJS Backend ───────────────────────────────────────
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../infrastructure/docker/Dockerfile.backend
+      target: development
+    container_name: zonvo_backend
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+      - '9229:9229'  # Node.js debugger
+    environment:
+      NODE_ENV: development
+    env_file:
+      - ./apps/backend/.env
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: npm run start:dev
+
+  # ─── BullMQ Worker ────────────────────────────────────────
+  worker:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../infrastructure/docker/Dockerfile.backend
+      target: development
+    container_name: zonvo_worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+    env_file:
+      - ./apps/backend/.env
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run start:worker
+
+  # ─── Next.js Web ──────────────────────────────────────────
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: ../../infrastructure/docker/Dockerfile.web
+      target: development
+    container_name: zonvo_web
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      NODE_ENV: development
+    env_file:
+      - ./apps/web/.env
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    command: npm run dev
+
+volumes:
+  pgdata:
+  redisdata:
+  redislivekitdata:
+  minidata:
+
+networks:
+  default:
+    name: zonvo_network

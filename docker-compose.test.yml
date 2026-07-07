@@ -1,0 +1,27 @@
+version: '3.9'
+
+# Minimal compose for CI integration tests
+services:
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: zonvo_postgres_test
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_DB: zonvo_test
+      POSTGRES_USER: zonvo
+      POSTGRES_PASSWORD: zonvo_test_password
+    tmpfs:
+      - /var/lib/postgresql/data  # in-memory for speed
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U zonvo -d zonvo_test']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis_test:
+    image: redis:7-alpine
+    container_name: zonvo_redis_test
+    ports:
+      - '6381:6379'
+    command: redis-server --maxmemory 256mb
