@@ -39,6 +39,11 @@ export interface AppConfig {
     apiKey: string;
     fromEmail: string;
     fromName: string;
+    smtpHost: string;
+    smtpPort: number;
+    smtpUser: string;
+    smtpPassword: string;
+    smtpSecure: boolean;
   };
   whatsapp: {
     accessToken: string;
@@ -115,8 +120,13 @@ export const configuration = (): AppConfig => ({
   },
   email: {
     apiKey: process.env['RESEND_API_KEY'] ?? '',
-    fromEmail: process.env['RESEND_FROM_EMAIL'] ?? 'notifications@mail.zonvo.io',
-    fromName: process.env['RESEND_FROM_NAME'] ?? 'Zonvo',
+    fromEmail: process.env['SMTP_FROM_EMAIL'] ?? process.env['RESEND_FROM_EMAIL'] ?? 'info@aiclexwebinar.in',
+    fromName: process.env['SMTP_FROM_NAME'] ?? process.env['RESEND_FROM_NAME'] ?? 'Aiclex Webinar',
+    smtpHost: process.env['SMTP_HOST'] ?? 'smtp.hostinger.com',
+    smtpPort: parseInt(process.env['SMTP_PORT'] ?? '465', 10),
+    smtpUser: process.env['SMTP_USER'] ?? '',
+    smtpPassword: process.env['SMTP_PASSWORD'] ?? '',
+    smtpSecure: process.env['SMTP_SECURE'] !== 'false', // default true (SSL on port 465)
   },
   whatsapp: {
     accessToken: process.env['META_WA_ACCESS_TOKEN'] ?? '',

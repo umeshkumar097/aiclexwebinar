@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Video, Cloud, Upload, Play, Link as LinkIcon, Trash2, ArrowRight } from 'lucide-react';
+import { Video, Cloud, Upload, Play, Link as LinkIcon, Trash2, ArrowRight, Download } from 'lucide-react';
 import { webinarApi, type Webinar } from '@/lib/api';
 
 export default function RecordingsPage() {
@@ -197,6 +197,9 @@ export default function RecordingsPage() {
                       <span className="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-white/50">
                         {rec.mode === 'semi_live' ? 'Semi-Live Asset' : 'Live Recording'}
                       </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-semibold">
+                        MP4
+                      </span>
                     </div>
                     <p className="text-white/30 text-xs mt-0.5 truncate max-w-md">
                       Webinar ID: {rec.id}
@@ -227,6 +230,17 @@ export default function RecordingsPage() {
                       >
                         <LinkIcon className="w-3.5 h-3.5" />
                       </button>
+                      <a
+                        href={url}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 border border-white/10 hover:bg-white/10 flex items-center gap-1.5 transition-colors text-white/70 hover:text-white"
+                        title="Download Recording"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download
+                      </a>
                     </>
                   )}
                   <button

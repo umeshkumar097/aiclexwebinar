@@ -3,12 +3,21 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Upload } from 'lucide-react';
+import { Upload, Zap } from 'lucide-react';
 import { webinarApi, type Webinar } from '@/lib/api';
 
 type WebinarMode = 'semi_live' | 'fully_live';
 type Step = 1 | 2 | 3;
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Recurrence {
+  frequency: 'weekly' | 'monthly';
+  daysOfWeek: number[]; // 0=Sun ... 6=Sat
+  dayOfMonth: number;   // 1–28
+  endDate: string;
+  occurrences: number;
+}
 
 interface FormData {
   title: string;
@@ -24,15 +33,23 @@ interface FormData {
   enableOffers: boolean;
   password: string;
   videoUrl: string;
+  thumbnailUrl: string; // top-level cover image
   // Competitor-parity settings
   repeat: boolean;
   privateWebinar: boolean;
   requireLogin: boolean;
   waitingRoom: boolean;
-  waitingThumbnailUrl: string; // optional waiting room thumbnail
+  waitingThumbnailUrl: string;
   enableWatermark: boolean;
   showLiveCount: boolean;
   enableRecording: boolean;
+  // Tags
+  tags: string[];
+  // Branding
+  brandingLogoUrl: string;
+  brandingAccentColor: string;
+  // Recurrence
+  recurrence: Recurrence;
 }
 
 const TIMEZONES = [
@@ -43,6 +60,8 @@ const TIMEZONES = [
   'UTC',
 ];
 
+const PRESET_TAGS = ['Marketing', 'Sales', 'Training', 'Product Demo', 'HR', 'Tech', 'Finance', 'Healthcare'];
+
 const DEFAULT_FORM: FormData = {
   title: '',
   description: '',
@@ -50,13 +69,14 @@ const DEFAULT_FORM: FormData = {
   scheduledAt: '',
   duration: 60,
   maxAttendees: 500,
-  timezone: 'UTC', // will be updated client-side to avoid SSR mismatch
+  timezone: 'UTC',
   requireRegistration: true,
   enableChat: true,
   enablePolls: true,
   enableOffers: false,
   password: '',
   videoUrl: '',
+  thumbnailUrl: '',
   repeat: false,
   privateWebinar: false,
   requireLogin: false,
@@ -65,6 +85,16 @@ const DEFAULT_FORM: FormData = {
   enableWatermark: false,
   showLiveCount: true,
   enableRecording: true,
+  tags: [],
+  brandingLogoUrl: '',
+  brandingAccentColor: '#8b5cf6',
+  recurrence: {
+    frequency: 'weekly',
+    daysOfWeek: [],
+    dayOfMonth: 1,
+    endDate: '',
+    occurrences: 0,
+  },
 };
 
 const STEPS = [
@@ -72,6 +102,67 @@ const STEPS = [
   { num: 2 as Step, label: 'Settings' },
   { num: 3 as Step, label: 'Review' },
 ];
+
+// ─── Templates ────────────────────────────────────────────────────────────────
+
+interface Template {
+  id: string;
+  emoji: string;
+  name: string;
+  desc: string;
+  features: string[];
+  patch: Partial<FormData>;
+}
+
+const TEMPLATES: Template[] = [
+  {
+    id: 'tpl-product-demo',
+    emoji: '🎯',
+    name: 'Product Demo',
+    desc: '60-min demo of your product',
+    features: ['Chat', 'Polls', 'Offers', 'Semi-live'],
+    patch: {
+      duration: 60, enableChat: true, enablePolls: true, enableOffers: true,
+      mode: 'semi_live', requireRegistration: true,
+    },
+  },
+  {
+    id: 'tpl-training',
+    emoji: '🎓',
+    name: 'Training Session',
+    desc: '90-min training webinar',
+    features: ['Chat', 'Q&A', 'Registration', 'Fully-live'],
+    patch: {
+      duration: 90, enableChat: true, enablePolls: true, enableOffers: false,
+      mode: 'fully_live', requireRegistration: true, requireLogin: true,
+    },
+  },
+  {
+    id: 'tpl-town-hall',
+    emoji: '📢',
+    name: 'Town Hall',
+    desc: '60-min all-hands event',
+    features: ['Q&A', 'Live count', 'Fully-live'],
+    patch: {
+      duration: 60, enableChat: false, enablePolls: true, showLiveCount: true,
+      mode: 'fully_live', requireRegistration: false,
+    },
+  },
+  {
+    id: 'tpl-launch',
+    emoji: '🚀',
+    name: 'Launch Event',
+    desc: '120-min product launch',
+    features: ['All features', 'Max attendees', 'Fully-live'],
+    patch: {
+      duration: 120, enableChat: true, enablePolls: true, enableOffers: true,
+      showLiveCount: true, enableRecording: true, mode: 'fully_live',
+      maxAttendees: 2000, requireRegistration: true,
+    },
+  },
+];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StepIndicator({ current }: { current: Step }) {
   return (
@@ -112,7 +203,6 @@ function ModeCard({ mode, selected, onClick }: { mode: WebinarMode; selected: bo
         </svg>
       ),
       color: 'violet',
-      features: [] as string[],
       badge: 'Recommended',
     },
     fully_live: {
@@ -124,7 +214,6 @@ function ModeCard({ mode, selected, onClick }: { mode: WebinarMode; selected: bo
         </svg>
       ),
       color: 'orange',
-      features: [] as string[],
       badge: null,
     },
   };
@@ -161,7 +250,6 @@ function ModeCard({ mode, selected, onClick }: { mode: WebinarMode; selected: bo
       <h3 className="font-semibold text-white text-lg mb-1">{c.title}</h3>
       <p className="text-sm text-white/50">{c.subtitle}</p>
 
-
       {selected && (
         <div className={`absolute top-4 right-4 w-5 h-5 rounded-full ${isViolet ? 'bg-violet-500' : 'bg-orange-500'} flex items-center justify-center`}>
           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,6 +279,226 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
   );
 }
 
+// ─── Tags Input ───────────────────────────────────────────────────────────────
+
+function TagsInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) => void }) {
+  const [input, setInput] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const addTag = (tag: string) => {
+    const trimmed = tag.trim();
+    if (!trimmed || tags.includes(trimmed) || tags.length >= 5) return;
+    onChange([...tags, trimmed]);
+    setInput('');
+  };
+
+  const removeTag = (tag: string) => onChange(tags.filter((t) => t !== tag));
+
+  const suggestions = PRESET_TAGS.filter(
+    (t) => !tags.includes(t) && t.toLowerCase().includes(input.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <span key={tag} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-violet-500/20 border border-violet-500/30 text-violet-300">
+            {tag}
+            <button type="button" onClick={() => removeTag(tag)} className="hover:text-white">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </span>
+        ))}
+      </div>
+
+      {tags.length < 5 && (
+        <div className="relative">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => { setInput(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); addTag(input); }
+              if (e.key === ',')    { e.preventDefault(); addTag(input); }
+            }}
+            placeholder="Type a tag and press Enter…"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-violet-500/60 transition-all"
+          />
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full mt-1 left-0 right-0 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-xl z-10 overflow-hidden">
+              {suggestions.slice(0, 5).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onMouseDown={() => addTag(s)}
+                  className="w-full text-left px-4 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <p className="text-xs text-white/30">{tags.length}/5 tags</p>
+    </div>
+  );
+}
+
+// ─── Recurrence UI ────────────────────────────────────────────────────────────
+
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function RecurrencePanel({ recurrence, onChange, startDate }: {
+  recurrence: Recurrence;
+  onChange: (r: Recurrence) => void;
+  startDate: string;
+}) {
+  const update = (patch: Partial<Recurrence>) => onChange({ ...recurrence, ...patch });
+
+  const toggleDay = (day: number) => {
+    const d = recurrence.daysOfWeek.includes(day)
+      ? recurrence.daysOfWeek.filter((x) => x !== day)
+      : [...recurrence.daysOfWeek, day];
+    update({ daysOfWeek: d });
+  };
+
+  // Compute occurrences count from endDate
+  const computeOccurrences = () => {
+    if (!recurrence.endDate || !startDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(recurrence.endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return 0;
+
+    const diffMs = end.getTime() - start.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+    if (recurrence.frequency === 'weekly') {
+      if (recurrence.daysOfWeek.length === 0) return 0;
+      return Math.floor((diffDays / 7) * recurrence.daysOfWeek.length);
+    } else {
+      return Math.floor(diffDays / 30);
+    }
+  };
+
+  const occurrences = computeOccurrences();
+
+  return (
+    <div className="space-y-4 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 mt-2">
+      {/* Frequency selector */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Frequency</p>
+        <div className="flex gap-2">
+          {(['weekly', 'monthly'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => update({ frequency: f })}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                recurrence.frequency === f
+                  ? 'bg-violet-600 text-white'
+                  : 'bg-white/5 text-white/50 hover:bg-white/10'
+              }`}
+            >
+              {f === 'weekly' ? 'Weekly' : 'Monthly'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Weekly: day-of-week checkboxes */}
+      {recurrence.frequency === 'weekly' && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Days of Week</p>
+          <div className="flex gap-2 flex-wrap">
+            {DAY_LABELS.map((day, i) => (
+              <button
+                key={day}
+                type="button"
+                onClick={() => toggleDay(i)}
+                className={`w-10 h-10 rounded-xl text-xs font-semibold transition-all ${
+                  recurrence.daysOfWeek.includes(i)
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-white/5 text-white/40 hover:bg-white/10'
+                }`}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Monthly: day of month */}
+      {recurrence.frequency === 'monthly' && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Day of Month</p>
+          <input
+            type="number"
+            min={1}
+            max={28}
+            value={recurrence.dayOfMonth}
+            onChange={(e) => update({ dayOfMonth: Math.max(1, Math.min(28, Number(e.target.value))) })}
+            className="w-24 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-500/60 transition-all"
+          />
+          <p className="text-xs text-white/30">Max 28 to avoid month-end issues</p>
+        </div>
+      )}
+
+      {/* End date */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">End Date</p>
+        <input
+          type="date"
+          value={recurrence.endDate}
+          onChange={(e) => update({ endDate: e.target.value })}
+          min={startDate ? startDate.split('T')[0] : undefined}
+          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-violet-500/60 transition-all [color-scheme:dark]"
+        />
+      </div>
+
+      {/* Count preview */}
+      {occurrences > 0 && (
+        <p className="text-xs text-violet-400 font-medium">
+          ✨ Will repeat <span className="font-bold">{occurrences}</span> time{occurrences !== 1 ? 's' : ''} until{' '}
+          {new Date(recurrence.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Image Uploader helper ─────────────────────────────────────────────────────
+
+async function uploadImageToR2(
+  file: File,
+  webinarId: string,
+): Promise<string> {
+  const { uploadUrl, publicUrl } = await webinarApi.getImageUploadUrl(
+    webinarId,
+    file.name,
+    file.type || 'image/jpeg',
+  );
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', file.type || 'image/jpeg');
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Failed with status ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error('Network upload error'));
+    xhr.send(file);
+  });
+  return publicUrl;
+}
+
+// ─── Main Form ────────────────────────────────────────────────────────────────
+
 function CreateWebinarForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -201,7 +509,9 @@ function CreateWebinarForm() {
   const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<FormData>(DEFAULT_FORM);
   const [loading, setLoading] = useState(false);
+  const [startNowLoading, setStartNowLoading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [showTemplates, setShowTemplates] = useState(true);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -224,24 +534,49 @@ function CreateWebinarForm() {
     }).catch(console.error);
   }, []);
 
-  // Set local timezone client-side (avoid SSR hydration mismatch)
+  // Set local timezone client-side
   useEffect(() => {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     update({ timezone: tz });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Prefill title & mode if redirected from Recordings
+  // Prefill from query params
   useEffect(() => {
-    if (initialTitle) {
-      update({ title: initialTitle });
-    }
-    if (initialVideoUrl) {
-      update({ mode: 'semi_live', videoUrl: initialVideoUrl });
-    }
+    if (initialTitle) update({ title: initialTitle });
+    if (initialVideoUrl) update({ mode: 'semi_live', videoUrl: initialVideoUrl });
   }, [initialTitle, initialVideoUrl]);
 
-  // Video upload handler
+  // Apply template
+  const applyTemplate = (tpl: Template) => {
+    update(tpl.patch);
+    setShowTemplates(false);
+    showToast(`Template "${tpl.name}" applied!`);
+  };
+
+  // ── Start Instantly ──────────────────────────────────────────────────────────
+  const handleStartNow = async () => {
+    setStartNowLoading(true);
+    try {
+      const title = `Live Session - ${new Date().toLocaleDateString(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      })}`;
+      const webinar = await webinarApi.create({
+        title,
+        mode: 'fully_live',
+        scheduledAt: new Date().toISOString(),
+        durationMinutes: 60,
+      });
+      router.push(`/dashboard/webinars/${webinar.id}/studio`);
+    } catch (err) {
+      console.error('Start now failed:', err);
+      showToast('Failed to start session. Please try again.', false);
+      setStartNowLoading(false);
+    }
+  };
+
+  // ── Video Upload ──────────────────────────────────────────────────────────────
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -250,7 +585,6 @@ function CreateWebinarForm() {
     setUploadProgress(0);
 
     try {
-      // 1. Create a draft webinar placeholder
       const draft = await webinarApi.create({
         title: form.title.trim() || file.name,
         description: 'Uploaded video for semi-live session',
@@ -258,35 +592,26 @@ function CreateWebinarForm() {
       });
       draftWebinarIdRef.current = draft.id;
 
-      // 2. Fetch presigned upload URL
       const { uploadUrl, publicUrl } = await webinarApi.getVideoUploadUrl(
-        draft.id,
-        file.name,
-        file.type || 'video/mp4'
+        draft.id, file.name, file.type || 'video/mp4',
       );
 
-      // 3. Upload file directly to R2
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', uploadUrl);
         xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
-
         xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
+          if (event.lengthComputable)
             setUploadProgress(Math.round((event.loaded / event.total) * 100));
-          }
         };
-
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) resolve();
           else reject(new Error(`Failed with status ${xhr.status}`));
         };
-
         xhr.onerror = () => reject(new Error('Network upload error'));
         xhr.send(file);
       });
 
-      // 4. Update form state & save to draft
       update({ videoUrl: publicUrl });
       await webinarApi.update(draft.id, { videoUrl: publicUrl, replayUrl: publicUrl });
       showToast('Video uploaded successfully!');
@@ -299,6 +624,7 @@ function CreateWebinarForm() {
     }
   };
 
+  // ── Create ────────────────────────────────────────────────────────────────────
   async function handleCreate(asDraft: boolean) {
     setLoading(true);
     try {
@@ -311,7 +637,7 @@ function CreateWebinarForm() {
         maxAttendees: form.maxAttendees,
         password: form.password.trim() || undefined,
         videoUrl: form.videoUrl || undefined,
-        // ✅ All settings toggles (competitor-parity)
+        thumbnailUrl: form.thumbnailUrl || undefined,
         settings: {
           requireRegistration: form.requireRegistration,
           enableChat:          form.enableChat,
@@ -326,20 +652,30 @@ function CreateWebinarForm() {
           showLiveCount:       form.showLiveCount,
           enableRecording:     form.enableRecording,
           timezone:            form.timezone,
+          tags:                form.tags,
+          branding: {
+            logoUrl:     form.brandingLogoUrl || null,
+            accentColor: form.brandingAccentColor,
+          },
+          recurrence: form.repeat ? {
+            frequency:   form.recurrence.frequency,
+            daysOfWeek:  form.recurrence.daysOfWeek,
+            dayOfMonth:  form.recurrence.dayOfMonth,
+            endDate:     form.recurrence.endDate || null,
+            occurrences: form.recurrence.occurrences,
+          } : null,
         },
       };
 
       let createdId: string;
 
       if (draftWebinarIdRef.current) {
-        // If draft was pre-created during upload, update it
         await webinarApi.update(draftWebinarIdRef.current, {
           ...payload,
           status: asDraft ? 'draft' : 'scheduled',
         });
         createdId = draftWebinarIdRef.current;
       } else {
-        // Create fresh webinar
         const webinar = await webinarApi.create(payload);
         createdId = webinar.id;
         if (!asDraft && webinar.id) {
@@ -355,7 +691,17 @@ function CreateWebinarForm() {
     }
   }
 
-
+  // ── Ensure draft exists helper ─────────────────────────────────────────────
+  const ensureDraftId = async () => {
+    if (!draftWebinarIdRef.current) {
+      const draft = await webinarApi.create({
+        title: form.title.trim() || 'Draft Webinar',
+        mode: form.mode,
+      });
+      draftWebinarIdRef.current = draft.id;
+    }
+    return draftWebinarIdRef.current;
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -379,11 +725,94 @@ function CreateWebinarForm() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-white">Create Webinar</h1>
           <p className="text-white/50 text-sm mt-0.5">Set up your webinar in minutes</p>
         </div>
+
+        {/* ⚡ Start Instantly Button */}
+        <button
+          id="start-now-btn"
+          type="button"
+          onClick={() => void handleStartNow()}
+          disabled={startNowLoading}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 shadow-lg"
+          style={{
+            background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+            boxShadow: '0 0 20px rgba(245,158,11,0.25)',
+          }}
+        >
+          {startNowLoading ? (
+            <>
+              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Starting…
+            </>
+          ) : (
+            <>
+              <Zap className="w-4 h-4" />
+              Start Instantly
+            </>
+          )}
+        </button>
       </div>
+
+      {/* ── Templates Section ──────────────────────────────────────────────────── */}
+      {showTemplates && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Start from Template</h2>
+              <p className="text-xs text-white/40 mt-0.5">Pick a preset to pre-fill your webinar settings</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.id}
+                id={tpl.id}
+                type="button"
+                onClick={() => applyTemplate(tpl)}
+                className="text-left p-4 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-violet-500/40 transition-all group"
+              >
+                <span className="text-2xl block mb-2">{tpl.emoji}</span>
+                <p className="text-sm font-semibold text-white group-hover:text-violet-300 transition-colors">{tpl.name}</p>
+                <p className="text-xs text-white/40 mt-0.5 mb-3">{tpl.desc}</p>
+                <div className="flex flex-wrap gap-1">
+                  {tpl.features.map((f) => (
+                    <span key={f} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] text-white/50 font-medium">
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setShowTemplates(false)}
+              className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-2"
+            >
+              Or start from scratch
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!showTemplates && (
+        <button
+          type="button"
+          onClick={() => setShowTemplates(true)}
+          className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-2"
+        >
+          ← Show templates
+        </button>
+      )}
 
       {/* Step indicator */}
       <StepIndicator current={step} />
@@ -422,7 +851,7 @@ function CreateWebinarForm() {
               <p className="text-xs text-white/30 text-right">{form.title.length}/255</p>
             </div>
 
-             {/* Description */}
+            {/* Description */}
             <div className="space-y-1.5">
               <label htmlFor="wn-desc" className="block text-sm font-medium text-white/80">
                 Description
@@ -438,7 +867,93 @@ function CreateWebinarForm() {
               />
             </div>
 
-            {/* Semi-Live Video Selector (Only shown if mode is semi_live) */}
+            {/* ── Cover Image ──────────────────────────────────────────────────── */}
+            <div className="space-y-2">
+              <div>
+                <p className="text-sm font-medium text-white/80">Cover Image</p>
+                <p className="text-xs text-white/40 mt-0.5">Shown on registration page & webinar card</p>
+              </div>
+
+              {form.thumbnailUrl ? (
+                <div className="relative rounded-2xl overflow-hidden border border-emerald-500/20 bg-black aspect-video max-w-sm">
+                  <img
+                    src={form.thumbnailUrl}
+                    alt="Cover image preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  <div className="absolute bottom-2 right-2 flex gap-2">
+                    <label className="cursor-pointer">
+                      <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-black/70 border border-white/20 text-white hover:bg-black/90 transition-all">
+                        🔄 Replace
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploading(true);
+                          try {
+                            const id = await ensureDraftId();
+                            const url = await uploadImageToR2(file, id);
+                            update({ thumbnailUrl: url });
+                            showToast('Cover image updated!');
+                          } catch {
+                            showToast('Image upload failed', false);
+                          } finally { setUploading(false); }
+                        }}
+                        disabled={uploading}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => update({ thumbnailUrl: '' })}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center border border-dashed border-white/20 hover:border-violet-500/50 hover:bg-white/[0.02] rounded-2xl p-8 cursor-pointer transition-all max-w-sm">
+                  <Upload className="w-6 h-6 text-white/30 mb-2" />
+                  <span className="text-sm text-white/60 font-medium">Upload Cover Image</span>
+                  <span className="text-xs text-white/30 mt-1">JPG, PNG, WEBP — max 5MB</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploading(true);
+                      try {
+                        const id = await ensureDraftId();
+                        const url = await uploadImageToR2(file, id);
+                        update({ thumbnailUrl: url });
+                        showToast('Cover image uploaded!');
+                      } catch {
+                        showToast('Image upload failed', false);
+                      } finally { setUploading(false); }
+                    }}
+                    disabled={uploading}
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* ── Tags ─────────────────────────────────────────────────────────── */}
+            <div className="space-y-2">
+              <div>
+                <p className="text-sm font-medium text-white/80">Tags</p>
+                <p className="text-xs text-white/40 mt-0.5">Add up to 5 tags to categorize your webinar</p>
+              </div>
+              <TagsInput tags={form.tags} onChange={(t) => update({ tags: t })} />
+            </div>
+
+            {/* Semi-Live Video Selector */}
             {form.mode === 'semi_live' && (
               <div className="space-y-4 border border-white/10 rounded-2xl p-5 bg-white/[0.01]">
                 <div>
@@ -447,24 +962,18 @@ function CreateWebinarForm() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Option A: Upload local video */}
+                  {/* Upload */}
                   <div className="space-y-2">
                     <label className="block text-xs font-medium text-white/60">Upload New Video</label>
                     <label className="flex flex-col items-center justify-center border border-dashed border-white/20 hover:border-violet-500/50 hover:bg-white/[0.02] rounded-xl p-4 cursor-pointer transition-all h-28 text-center">
                       <Upload className="w-5 h-5 text-white/40 mb-1" />
                       <span className="text-xs text-white/70 font-medium">Select file (.mp4, .webm)</span>
                       <span className="text-[10px] text-white/30 mt-1">Direct upload to Cloudflare R2</span>
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={handleVideoUpload}
-                        disabled={uploading}
-                        className="hidden"
-                      />
+                      <input type="file" accept="video/*" onChange={handleVideoUpload} disabled={uploading} className="hidden" />
                     </label>
                   </div>
 
-                  {/* Option B: Choose from recordings */}
+                  {/* Existing */}
                   <div className="space-y-2">
                     <label className="block text-xs font-medium text-white/60">Choose Existing Recording</label>
                     <div className="border border-white/10 rounded-xl p-4 bg-white/[0.02] h-28 flex flex-col justify-between">
@@ -494,7 +1003,7 @@ function CreateWebinarForm() {
                 {uploading && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs font-medium">
-                      <span className="text-white/60">Uploading video file…</span>
+                      <span className="text-white/60">Uploading…</span>
                       <span className="text-violet-400">{uploadProgress}%</span>
                     </div>
                     <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
@@ -503,10 +1012,9 @@ function CreateWebinarForm() {
                   </div>
                 )}
 
-                {/* Video Preview Card — replaces the URL text */}
+                {/* Video Preview */}
                 {form.videoUrl && !uploading && (
                   <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-2xl overflow-hidden">
-                    {/* Video player */}
                     <div className="relative bg-black aspect-video w-full max-h-48">
                       <video
                         key={form.videoUrl}
@@ -514,38 +1022,24 @@ function CreateWebinarForm() {
                         controls
                         preload="metadata"
                         className="w-full h-full object-contain"
-                        onError={(e) => {
-                          // If video can't load (e.g. CORS), show poster fallback
-                          (e.target as HTMLVideoElement).style.display = 'none';
-                        }}
+                        onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
                       />
-                      {/* Fallback icon in case video can't load inline */}
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-2xl opacity-60">▶</div>
                       </div>
                     </div>
-
-                    {/* Actions row */}
                     <div className="flex items-center justify-between px-4 py-3 gap-3">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-emerald-400 text-sm">✅</span>
                         <span className="text-white/70 text-xs font-medium truncate">Video ready</span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {/* Replace */}
                         <label className="cursor-pointer">
                           <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 text-white/70 hover:text-white transition-all">
                             🔄 Replace
                           </span>
-                          <input
-                            type="file"
-                            accept="video/*"
-                            onChange={handleVideoUpload}
-                            disabled={uploading}
-                            className="hidden"
-                          />
+                          <input type="file" accept="video/*" onChange={handleVideoUpload} disabled={uploading} className="hidden" />
                         </label>
-                        {/* Delete */}
                         <button
                           type="button"
                           onClick={() => update({ videoUrl: '' })}
@@ -559,7 +1053,6 @@ function CreateWebinarForm() {
                 )}
               </div>
             )}
-
 
             {/* Schedule */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -636,7 +1129,7 @@ function CreateWebinarForm() {
               </select>
             </div>
 
-            {/* Access password */}
+            {/* Password */}
             <div className="space-y-1.5">
               <label htmlFor="wn-pw" className="block text-sm font-medium text-white/80">
                 Access Password <span className="text-white/30 font-normal">(optional)</span>
@@ -653,42 +1146,21 @@ function CreateWebinarForm() {
 
             {/* Feature toggles */}
             <div className="space-y-1 divide-y divide-white/[0.05] bg-white/[0.02] border border-white/[0.05] rounded-2xl px-4">
-
               <div className="py-3">
                 <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Access Controls</p>
               </div>
 
-              <Toggle
-                checked={form.requireRegistration}
-                onChange={(v) => update({ requireRegistration: v })}
-                label="Registration Page"
-                description="Public page where attendees view the event and register"
-              />
-              <Toggle
-                checked={form.requireLogin}
-                onChange={(v) => update({ requireLogin: v })}
-                label="Require Login"
-                description="Require attendees to log in to join the webinar"
-              />
-              <Toggle
-                checked={form.privateWebinar}
-                onChange={(v) => update({ privateWebinar: v, requireLogin: v ? true : form.requireLogin })}
-                label="Private Webinar"
-                description="Invite-only — Require Login will be enabled automatically"
-              />
-              <Toggle
-                checked={form.waitingRoom}
-                onChange={(v) => update({ waitingRoom: v })}
-                label="Waiting Room"
-                description="Attendees must be approved by the host before joining"
-              />
+              <Toggle checked={form.requireRegistration} onChange={(v) => update({ requireRegistration: v })} label="Registration Page" description="Public page where attendees view the event and register" />
+              <Toggle checked={form.requireLogin} onChange={(v) => update({ requireLogin: v })} label="Require Login" description="Require attendees to log in to join the webinar" />
+              <Toggle checked={form.privateWebinar} onChange={(v) => update({ privateWebinar: v, requireLogin: v ? true : form.requireLogin })} label="Private Webinar" description="Invite-only — Require Login will be enabled automatically" />
+              <Toggle checked={form.waitingRoom} onChange={(v) => update({ waitingRoom: v })} label="Waiting Room" description="Attendees must be approved by the host before joining" />
 
-              {/* Waiting Room Thumbnail — shown only when waitingRoom is ON */}
+              {/* Waiting Room Thumbnail */}
               {form.waitingRoom && (
                 <div className="py-3 space-y-2 border-t border-white/[0.05]">
                   <p className="text-sm font-medium text-white">Waiting Room Thumbnail <span className="text-white/30 font-normal text-xs">(optional)</span></p>
-                  <p className="text-xs text-white/40">Image shown to attendees while they wait for host approval. Leave blank to use the default.</p>
-                  
+                  <p className="text-xs text-white/40">Image shown to attendees while they wait for host approval.</p>
+
                   <div className="flex items-center gap-3">
                     <label className="cursor-pointer">
                       <span className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-white/[0.06] hover:bg-white/[0.10] border border-white/10 text-white/70 hover:text-white transition-all">
@@ -701,53 +1173,21 @@ function CreateWebinarForm() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          
                           setUploading(true);
                           try {
-                            // 1. Ensure we have a draft ID if it doesn't exist
-                            let currentId = draftWebinarIdRef.current;
-                            if (!currentId) {
-                              const draft = await webinarApi.create({
-                                title: form.title.trim() || 'Draft Webinar',
-                                mode: form.mode,
-                              });
-                              draftWebinarIdRef.current = draft.id;
-                              currentId = draft.id;
-                            }
-                            
-                            // 2. Get presigned upload URL
-                            const { uploadUrl, publicUrl } = await webinarApi.getImageUploadUrl(
-                              currentId,
-                              file.name,
-                              file.type || 'image/jpeg'
-                            );
-                            
-                            // 3. Upload to R2
-                            await new Promise<void>((resolve, reject) => {
-                              const xhr = new XMLHttpRequest();
-                              xhr.open('PUT', uploadUrl);
-                              xhr.setRequestHeader('Content-Type', file.type || 'image/jpeg');
-                              xhr.onload = () => {
-                                if (xhr.status >= 200 && xhr.status < 300) resolve();
-                                else reject(new Error(`Failed with status ${xhr.status}`));
-                              };
-                              xhr.onerror = () => reject(new Error('Network upload error'));
-                              xhr.send(file);
-                            });
-                            
-                            update({ waitingThumbnailUrl: publicUrl });
+                            const id = await ensureDraftId();
+                            const url = await uploadImageToR2(file, id);
+                            update({ waitingThumbnailUrl: url });
                             showToast('Thumbnail uploaded successfully!');
                           } catch (err) {
-                            console.error('Thumbnail upload failed:', err);
+                            console.error(err);
                             showToast('Failed to upload thumbnail', false);
-                          } finally {
-                            setUploading(false);
-                          }
+                          } finally { setUploading(false); }
                         }}
                         disabled={uploading}
                       />
                     </label>
-                    
+
                     <input
                       type="url"
                       value={form.waitingThumbnailUrl}
@@ -759,18 +1199,9 @@ function CreateWebinarForm() {
 
                   {form.waitingThumbnailUrl && (
                     <div className="relative mt-2 rounded-xl overflow-hidden border border-white/10 aspect-video bg-black max-w-sm">
-                      <img
-                        src={form.waitingThumbnailUrl}
-                        alt="Waiting room thumbnail preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => update({ waitingThumbnailUrl: '' })}
-                        className="absolute top-2 right-2 bg-black/60 hover:bg-red-500/80 text-white rounded-full p-1.5 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                      <img src={form.waitingThumbnailUrl} alt="Waiting room thumbnail" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <button type="button" onClick={() => update({ waitingThumbnailUrl: '' })} className="absolute top-2 right-2 bg-black/60 hover:bg-red-500/80 text-white rounded-full p-1.5 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                       </button>
                     </div>
                   )}
@@ -786,53 +1217,132 @@ function CreateWebinarForm() {
                 <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Engagement</p>
               </div>
 
-              <Toggle
-                checked={form.enableChat}
-                onChange={(v) => update({ enableChat: v })}
-                label="Live Chat"
-                description="Allow attendees to send chat messages"
-              />
-              <Toggle
-                checked={form.enablePolls}
-                onChange={(v) => update({ enablePolls: v })}
-                label="Polls & Q&A"
-                description="Create interactive polls during the webinar"
-              />
-              <Toggle
-                checked={form.enableOffers}
-                onChange={(v) => update({ enableOffers: v })}
-                label="Offers & CTAs"
-                description="Display timed offers and call-to-action buttons"
-              />
-              <Toggle
-                checked={form.showLiveCount}
-                onChange={(v) => update({ showLiveCount: v })}
-                label="Show Live User Count"
-                description="Show the live viewer count to all attendees"
-              />
+              <Toggle checked={form.enableChat} onChange={(v) => update({ enableChat: v })} label="Live Chat" description="Allow attendees to send chat messages" />
+              <Toggle checked={form.enablePolls} onChange={(v) => update({ enablePolls: v })} label="Polls & Q&A" description="Create interactive polls during the webinar" />
+              <Toggle checked={form.enableOffers} onChange={(v) => update({ enableOffers: v })} label="Offers & CTAs" description="Display timed offers and call-to-action buttons" />
+              <Toggle checked={form.showLiveCount} onChange={(v) => update({ showLiveCount: v })} label="Show Live User Count" description="Show the live viewer count to all attendees" />
 
               <div className="py-3">
                 <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Recording & Privacy</p>
               </div>
 
-              <Toggle
-                checked={form.enableRecording}
-                onChange={(v) => update({ enableRecording: v })}
-                label="Enable Recording"
-                description="Record the webinar for playback later"
-              />
-              <Toggle
-                checked={form.enableWatermark}
-                onChange={(v) => update({ enableWatermark: v })}
-                label="Enable Watermark"
-                description="Show viewer name as a watermark on the video"
-              />
+              <Toggle checked={form.enableRecording} onChange={(v) => update({ enableRecording: v })} label="Enable Recording" description="Record the webinar for playback later" />
+              <Toggle checked={form.enableWatermark} onChange={(v) => update({ enableWatermark: v })} label="Enable Watermark" description="Show viewer name as a watermark on the video" />
               <Toggle
                 checked={form.repeat}
                 onChange={(v) => update({ repeat: v })}
                 label="Repeat Schedule"
                 description="Schedule this webinar to repeat at regular intervals"
               />
+
+              {/* ── Recurrence Panel ─────────────────────────────────────── */}
+              {form.repeat && (
+                <div className="pb-3">
+                  <RecurrencePanel
+                    recurrence={form.recurrence}
+                    onChange={(r) => update({ recurrence: r })}
+                    startDate={form.scheduledAt}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* ── Landing Page Branding ──────────────────────────────────── */}
+            <div className="space-y-4 border border-white/[0.06] rounded-2xl p-5 bg-white/[0.01]">
+              <div>
+                <h3 className="text-sm font-semibold text-white">Registration Page Appearance</h3>
+                <p className="text-xs text-white/40 mt-0.5">Customize branding shown on your landing page</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Logo Upload */}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-white/60">Logo <span className="text-white/30">(100×100 max)</span></p>
+                  {form.brandingLogoUrl ? (
+                    <div className="flex items-center gap-3">
+                      <img src={form.brandingLogoUrl} alt="Logo" className="w-12 h-12 rounded-xl object-cover border border-white/10" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <div className="space-y-1.5">
+                        <label className="cursor-pointer">
+                          <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all">
+                            Replace
+                          </span>
+                          <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setUploading(true);
+                            try {
+                              const id = await ensureDraftId();
+                              const url = await uploadImageToR2(file, id);
+                              update({ brandingLogoUrl: url });
+                            } catch { showToast('Logo upload failed', false); }
+                            finally { setUploading(false); }
+                          }} disabled={uploading} />
+                        </label>
+                        <button type="button" onClick={() => update({ brandingLogoUrl: '' })} className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all">Remove</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center border border-dashed border-white/20 hover:border-violet-500/50 rounded-xl p-4 cursor-pointer transition-all h-20">
+                      <div className="text-center">
+                        <Upload className="w-5 h-5 text-white/30 mx-auto mb-1" />
+                        <span className="text-xs text-white/50">Upload logo</span>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploading(true);
+                        try {
+                          const id = await ensureDraftId();
+                          const url = await uploadImageToR2(file, id);
+                          update({ brandingLogoUrl: url });
+                          showToast('Logo uploaded!');
+                        } catch { showToast('Logo upload failed', false); }
+                        finally { setUploading(false); }
+                      }} disabled={uploading} />
+                    </label>
+                  )}
+                </div>
+
+                {/* Accent Color */}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-white/60">Accent Color</p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="branding-accent"
+                      type="color"
+                      value={form.brandingAccentColor}
+                      onChange={(e) => update({ brandingAccentColor: e.target.value })}
+                      className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer overflow-hidden"
+                    />
+                    <input
+                      type="text"
+                      value={form.brandingAccentColor}
+                      onChange={(e) => update({ brandingAccentColor: e.target.value })}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-violet-500/60 transition-all"
+                    />
+                  </div>
+                  {/* Mini Preview Card */}
+                  <div
+                    className="rounded-xl p-3 border mt-2"
+                    style={{ borderColor: `${form.brandingAccentColor}33`, background: `${form.brandingAccentColor}0d` }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      {form.brandingLogoUrl && (
+                        <img src={form.brandingLogoUrl} alt="logo" className="w-5 h-5 rounded object-cover" />
+                      )}
+                      <p className="text-xs font-semibold text-white">{form.title || 'Your Webinar'}</p>
+                    </div>
+                    <div className="h-1 rounded-full w-1/2" style={{ background: form.brandingAccentColor }} />
+                    <p className="text-[10px] text-white/40 mt-2">Registration page preview</p>
+                    <div
+                      className="mt-2 text-[9px] font-semibold text-white px-2 py-1 rounded-lg w-fit"
+                      style={{ background: form.brandingAccentColor }}
+                    >
+                      Register Now
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -853,6 +1363,8 @@ function CreateWebinarForm() {
                 { label: 'Duration', value: (() => { const h = Math.floor(form.duration / 60); const m = form.duration % 60; return m > 0 ? `${h}h ${m}m` : `${h}h`; })() },
                 { label: 'Timezone', value: form.timezone },
                 { label: 'Max Attendees', value: form.maxAttendees.toLocaleString() },
+                { label: 'Tags', value: form.tags.length > 0 ? form.tags.join(', ') : '—' },
+                { label: 'Cover Image', value: form.thumbnailUrl ? '✅ Set' : '—' },
                 { label: 'Registration Page', value: form.requireRegistration ? '✅ On' : '—' },
                 { label: 'Require Login', value: form.requireLogin ? '✅ On' : '—' },
                 { label: 'Private Webinar', value: form.privateWebinar ? '✅ On' : '—' },
@@ -863,7 +1375,8 @@ function CreateWebinarForm() {
                 { label: 'Show Viewer Count', value: form.showLiveCount ? '✅ On' : '—' },
                 { label: 'Enable Recording', value: form.enableRecording ? '✅ On' : '—' },
                 { label: 'Watermark', value: form.enableWatermark ? '✅ On' : '—' },
-                { label: 'Repeat Schedule', value: form.repeat ? '✅ On' : '—' },
+                { label: 'Repeat Schedule', value: form.repeat ? `✅ ${form.recurrence.frequency}` : '—' },
+                { label: 'Accent Color', value: form.brandingAccentColor },
                 ...(form.password ? [{ label: 'Password Protected', value: '✅ Yes' }] : []),
               ].map((row) => (
                 <div key={row.label} className="flex items-start justify-between gap-4 py-2 border-b border-white/[0.05]">
@@ -873,7 +1386,6 @@ function CreateWebinarForm() {
               ))}
             </div>
 
-            {/* Description preview */}
             {form.description && (
               <div className="bg-white/[0.03] rounded-xl p-4">
                 <p className="text-xs text-white/40 mb-2">Description</p>
@@ -901,7 +1413,7 @@ function CreateWebinarForm() {
           {step === 3 && (
             <button
               type="button"
-              onClick={() => handleCreate(true)}
+              onClick={() => void handleCreate(true)}
               disabled={loading}
               className="px-4 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:text-white bg-white/5 hover:bg-white/10 transition-all disabled:opacity-50"
             >
@@ -964,4 +1476,3 @@ export default function CreateWebinarPage() {
     </Suspense>
   );
 }
-

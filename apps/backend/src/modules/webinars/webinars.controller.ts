@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -526,6 +527,31 @@ export class WebinarsController {
     await this.webinarsService.findOne(id, user.userId, user.orgId ?? null);
     const viewers = this.sse.getViewers(id);
     return { success: true, data: { viewers, count: viewers.length } };
+  }
+
+  // ── Start Instantly: create + go live in one call ─────────────────────────
+  @Post('start-now')
+  @UseGuards(JwtAuthGuard)
+  async startNow(
+    @Body() dto: CreateWebinarDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const webinar = await this.webinarsService.createAndGoLive(
+      dto,
+      user.userId,
+      user.orgId ?? null,
+    );
+    return { success: true, data: webinar };
+  }
+
+  // ── LiveKit Egress webhook (no auth — called by LiveKit cloud) ────────────
+  @Post('webhook/livekit')
+  @HttpCode(200)
+  async livekitWebhook(
+    @Body() body: Record<string, unknown>,
+    @Headers() headers: Record<string, string>,
+  ) {
+    return this.webinarsService.handleLivekitWebhook(body, headers);
   }
 }
 

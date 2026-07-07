@@ -17,6 +17,7 @@ import {
   ChevronDown,
   HelpCircle,
   FolderOpen,
+  CreditCard,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -42,6 +43,7 @@ const navItems: NavItem[] = [
 
 const bottomNavItems: NavItem[] = [
   { id: 'nav-notifications', label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
+  { id: 'nav-billing', label: 'Billing', href: '/dashboard/billing', icon: CreditCard },
   { id: 'nav-settings', label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 

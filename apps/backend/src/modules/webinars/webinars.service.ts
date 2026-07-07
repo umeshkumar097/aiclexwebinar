@@ -11,6 +11,7 @@ import { Webinar, WebinarStatus, WebinarMode } from './entities/webinar.entity';
 
 import { CreateWebinarDto } from './dto/create-webinar.dto';
 import { UpdateWebinarDto } from './dto/update-webinar.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function generateJoinCode(): string {
@@ -23,6 +24,7 @@ export class WebinarsService {
   constructor(
     @InjectRepository(Webinar)
     private readonly webinarRepo: Repository<Webinar>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(userId: string, orgId: string | null, dto: CreateWebinarDto): Promise<Webinar> {
@@ -170,7 +172,38 @@ export class WebinarsService {
       webinar.settings = settings;
     }
 
-    return this.webinarRepo.save(webinar);
+    const saved = await this.webinarRepo.save(webinar);
+
+    // Notify all registered attendees that webinar has started
+    const registrants = (settings.registrants as any[]) || [];
+    const frontendUrl = process.env['FRONTEND_URL'] ?? 'http://localhost:3001';
+    for (const registrant of registrants) {
+      if (!registrant.email) continue;
+      try {
+        await this.notificationsService.queue(
+          'email',
+          registrant.email,
+          'webinar.started',
+          {
+            firstName: registrant.name || 'there',
+            webinarTitle: webinar.title,
+            webinarDate: webinar.scheduledAt
+              ? new Date(webinar.scheduledAt).toLocaleDateString()
+              : new Date().toLocaleDateString(),
+            webinarTime: webinar.scheduledAt
+              ? new Date(webinar.scheduledAt).toLocaleTimeString()
+              : new Date().toLocaleTimeString(),
+            joinLink: `${frontendUrl}/join/${webinar.joinCode}`,
+            hostName: 'The Host',
+          },
+          { userId: registrant.userId },
+        );
+      } catch (err) {
+        console.error(`Failed to queue webinar.started email for ${registrant.email}:`, err);
+      }
+    }
+
+    return saved;
   }
 
   async endLive(id: string, userId: string, orgId: string | null): Promise<Webinar> {
@@ -320,16 +353,82 @@ export class WebinarsService {
     // Check if email already registered
     const exists = registrants.some((r) => r.email === email);
     if (!exists) {
-      registrants.push({
+      const registrant = {
         id: `reg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         name: name.trim(),
         email: email.trim().toLowerCase(),
         registeredAt: new Date().toISOString(),
-      });
+      };
+      registrants.push(registrant);
       settings.registrants = registrants;
       webinar.settings = settings;
       webinar.registeredCount = registrants.length;
-      return this.webinarRepo.save(webinar);
+      const saved = await this.webinarRepo.save(webinar);
+
+      // Send registration confirmation email
+      const frontendUrl = process.env['FRONTEND_URL'] ?? 'http://localhost:3001';
+      try {
+        await this.notificationsService.queue(
+          'email',
+          registrant.email,
+          'webinar.registration_confirmed',
+          {
+            firstName: registrant.name || 'there',
+            webinarTitle: webinar.title,
+            webinarDate: webinar.scheduledAt
+              ? new Date(webinar.scheduledAt).toLocaleDateString()
+              : 'TBD',
+            webinarTime: webinar.scheduledAt
+              ? new Date(webinar.scheduledAt).toLocaleTimeString()
+              : 'TBD',
+            joinLink: `${frontendUrl}/join/${webinar.joinCode}`,
+            hostName: 'The Host',
+          },
+          { userId: registrant.id },
+        );
+      } catch (err) {
+        console.error('Failed to queue registration confirmation email:', err);
+      }
+
+      // Queue scheduled reminder emails if webinar has a scheduledAt
+      if (webinar.scheduledAt) {
+        const scheduledAt = new Date(webinar.scheduledAt).getTime();
+        const reminderData = {
+          firstName: registrant.name || 'there',
+          webinarTitle: webinar.title,
+          webinarDate: new Date(webinar.scheduledAt).toLocaleDateString(),
+          webinarTime: new Date(webinar.scheduledAt).toLocaleTimeString(),
+          joinLink: `${frontendUrl}/join/${webinar.joinCode}`,
+          hostName: 'The Host',
+        };
+
+        const reminders: Array<{ template: string; delay: number; label: string }> = [
+          { template: 'webinar.reminder_24h', delay: scheduledAt - 24 * 60 * 60 * 1000, label: '24h' },
+          { template: 'webinar.reminder_1h', delay: scheduledAt - 60 * 60 * 1000, label: '1h' },
+          { template: 'webinar.reminder_15m', delay: scheduledAt - 15 * 60 * 1000, label: '15m' },
+        ];
+
+        for (const reminder of reminders) {
+          if (reminder.delay > Date.now()) {
+            try {
+              await this.notificationsService.queue(
+                'email',
+                registrant.email,
+                reminder.template,
+                reminderData,
+                {
+                  userId: registrant.id,
+                  scheduledAt: new Date(reminder.delay),
+                },
+              );
+            } catch (err) {
+              console.error(`Failed to queue ${reminder.label} reminder for ${registrant.email}:`, err);
+            }
+          }
+        }
+      }
+
+      return saved;
     }
     return webinar;
   }
@@ -378,6 +477,52 @@ export class WebinarsService {
       return this.webinarRepo.save(webinar);
     }
     return webinar;
+  }
+
+  // ── Task 4: Handle LiveKit Egress webhook ─────────────────────────────────
+  async handleLivekitWebhook(body: any, headers: any): Promise<{ ok: boolean }> {
+    try {
+      // LiveKit sends EgressUpdated event with status EGRESS_COMPLETE
+      if (body.event === 'egress_updated' || body.event === 'egress_ended') {
+        const egress = body.egressInfo;
+        if (!egress) return { ok: true };
+
+        // Find webinar by egressId stored in settings
+        const webinars = await this.webinarRepo.find();
+        const webinar = webinars.find((w) => w.settings?.egressId === egress.egressId);
+
+        if (webinar && egress.status === 'EGRESS_COMPLETE') {
+          // Get the file URL from egress info
+          const fileResults = egress.fileResults || [];
+          if (fileResults.length > 0) {
+            const fileUrl = fileResults[0].downloadUrl || fileResults[0].location;
+            if (fileUrl) {
+              webinar.replayUrl = fileUrl;
+              webinar.settings = {
+                ...webinar.settings,
+                recordingActive: false,
+                recordingUrl: fileUrl,
+              };
+              await this.webinarRepo.save(webinar);
+            }
+          }
+        }
+      }
+      return { ok: true };
+    } catch (err) {
+      console.error('LiveKit webhook error:', err);
+      return { ok: true }; // Always return 200 to LiveKit
+    }
+  }
+
+  // ── Task 5: Create webinar and immediately go live ────────────────────────
+  async createAndGoLive(dto: CreateWebinarDto, userId: string, orgId: string | null): Promise<Webinar> {
+    // Create with DRAFT status first, then immediately go live
+    const webinar = await this.create(userId, orgId, {
+      ...dto,
+      title: dto.title || `Live Session ${new Date().toLocaleDateString()}`,
+    });
+    return this.goLive(webinar.id, userId, orgId);
   }
 }
 
