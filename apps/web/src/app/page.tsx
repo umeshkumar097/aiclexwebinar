@@ -80,7 +80,6 @@ const plans = [
       'Unlimited webinars',
       'Unlimited attendees',
       'Unlimited storage',
-      'White-label',
       'Dedicated support',
       'SLA guarantee',
       'Custom integrations',
