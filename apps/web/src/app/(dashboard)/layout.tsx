@@ -33,20 +33,20 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { id: 'nav-dashboard', label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { id: 'nav-webinars', label: 'Webinars', href: '/dashboard/webinars', icon: Video },
-  { id: 'nav-recordings', label: 'Recordings', href: '/dashboard/recordings', icon: FolderOpen },
-  { id: 'nav-audience', label: 'Audience', href: '/dashboard/audience', icon: Users },
-  { id: 'nav-analytics', label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { id: 'nav-dashboard',  label: 'Dashboard',  href: '/dashboard',             icon: LayoutDashboard },
+  { id: 'nav-webinars',   label: 'Webinars',   href: '/dashboard/webinars',    icon: Video },
+  { id: 'nav-recordings', label: 'Recordings', href: '/dashboard/recordings',  icon: FolderOpen },
+  { id: 'nav-audience',   label: 'Audience',   href: '/dashboard/audience',    icon: Users },
+  { id: 'nav-analytics',  label: 'Analytics',  href: '/dashboard/analytics',   icon: BarChart3 },
 ];
-
 
 const bottomNavItems: NavItem[] = [
   { id: 'nav-notifications', label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
-  { id: 'nav-billing', label: 'Billing', href: '/dashboard/billing', icon: CreditCard },
-  { id: 'nav-settings', label: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { id: 'nav-billing',       label: 'Billing',       href: '/dashboard/billing',       icon: CreditCard },
+  { id: 'nav-settings',      label: 'Settings',      href: '/dashboard/settings',      icon: Settings },
 ];
 
+/* ─── Sidebar ─────────────────────────────────────────────────────────────── */
 function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
@@ -58,26 +58,31 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
     <nav
       className="flex flex-col h-full"
       style={{
-        background: 'hsl(var(--sidebar-bg))',
-        borderRight: '1px solid hsl(var(--sidebar-border))',
+        background: 'linear-gradient(180deg, #f0f6ff 0%, #f8faff 100%)',
+        borderRight: '1px solid hsl(217 40% 88%)',
         width: '256px',
+        boxShadow: '2px 0 12px rgba(30, 64, 175, 0.06)',
       }}
       aria-label="Main navigation"
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 p-5 border-b border-border/50">
+      <div className="flex items-center gap-2.5 p-5" style={{ borderBottom: '1px solid hsl(217 40% 90%)' }}>
         <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))' }}
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md"
+          style={{ background: 'linear-gradient(135deg, #1d6fe8, #2563eb)' }}
         >
-          <Zap className="w-4 h-4 text-white" fill="white" />
+          <Zap className="w-4.5 h-4.5 text-white" fill="white" />
         </div>
-        <span className="font-bold text-white text-[15px]">Zonvo</span>
+        <div>
+          <span className="font-bold text-[16px]" style={{ color: '#1e2433' }}>Zonvo</span>
+          <p className="text-[10px]" style={{ color: '#64748b' }}>Webinar Platform</p>
+        </div>
         {onClose && (
           <button
             id="close-sidebar"
             onClick={onClose}
-            className="ml-auto text-muted-foreground hover:text-foreground lg:hidden"
+            className="ml-auto lg:hidden transition-colors"
+            style={{ color: '#94a3b8' }}
             aria-label="Close navigation"
           >
             <X className="w-5 h-5" />
@@ -85,29 +90,30 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
         )}
       </div>
 
-      {/* Organization Selector */}
+      {/* Organization */}
       <div className="p-3">
         <button
           id="org-selector"
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors"
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-200"
+          style={{ background: 'rgba(30,64,175,0.05)', border: '1px solid hsl(217 40% 90%)' }}
         >
           <div
-            className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-xs font-bold text-white"
-            style={{ background: 'hsl(262 83% 50%)' }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold text-white shadow-sm"
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #f4b413)' }}
           >
             Z
           </div>
           <div className="flex-1 text-left">
-            <p className="text-xs font-medium text-foreground truncate">My Organization</p>
-            <p className="text-[10px] text-muted-foreground">Free Plan</p>
+            <p className="text-xs font-semibold" style={{ color: '#1e2433' }}>My Organization</p>
+            <p className="text-[10px]" style={{ color: '#94a3b8' }}>Free Plan</p>
           </div>
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+          <ChevronDown className="w-3.5 h-3.5" style={{ color: '#94a3b8' }} />
         </button>
       </div>
 
       {/* Main Nav */}
       <div className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
-        <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>
           Platform
         </p>
 
@@ -130,8 +136,8 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
               {item.label}
               {item.badge !== undefined && (
                 <span
-                  className="ml-auto px-1.5 py-0.5 text-[10px] font-semibold rounded-full"
-                  style={{ background: 'hsl(262 83% 67%)', color: 'white' }}
+                  className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full text-white"
+                  style={{ background: '#1d6fe8' }}
                 >
                   {item.badge}
                 </span>
@@ -142,7 +148,7 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
       </div>
 
       {/* Bottom Nav */}
-      <div className="px-3 py-2 space-y-0.5 border-t border-border/50">
+      <div className="px-3 py-2 space-y-0.5" style={{ borderTop: '1px solid hsl(217 40% 90%)' }}>
         {bottomNavItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
@@ -166,28 +172,34 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
           rel="noopener noreferrer"
         >
           <HelpCircle className="w-4 h-4 flex-shrink-0" />
-          Help & Docs
+          Help &amp; Docs
         </Link>
       </div>
 
       {/* User Profile */}
-      <div className="p-3 border-t border-border/50">
-        <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg">
+      <div className="p-3" style={{ borderTop: '1px solid hsl(217 40% 90%)' }}>
+        <div
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
+          style={{ background: 'rgba(30,64,175,0.04)', border: '1px solid hsl(217 40% 92%)' }}
+        >
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white"
-            style={{ background: 'linear-gradient(135deg, hsl(262 83% 50%), hsl(217 91% 45%))' }}
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white shadow-sm"
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #f4b413)' }}
             aria-hidden="true"
           >
             {getInitials(firstName.charAt(0), firstName.charAt(1) || 'Z')}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-foreground truncate">{firstName}</p>
-            <p className="text-[10px] text-muted-foreground truncate">{email}</p>
+            <p className="text-xs font-semibold truncate" style={{ color: '#1e2433' }}>{firstName}</p>
+            <p className="text-[10px] truncate" style={{ color: '#94a3b8' }}>{email}</p>
           </div>
           <button
             id="logout-btn"
             onClick={() => void logout()}
-            className="text-muted-foreground hover:text-destructive transition-colors"
+            className="transition-colors p-1.5 rounded-lg hover:bg-red-50"
+            style={{ color: '#94a3b8' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
             aria-label="Sign out"
             title="Sign out"
           >
@@ -199,6 +211,7 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
   );
 }
 
+/* ─── Layout ──────────────────────────────────────────────────────────────── */
 export default function DashboardLayout({
   children,
 }: {
@@ -207,7 +220,7 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ background: '#f4f7ff' }}>
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex flex-shrink-0">
         <Sidebar />
@@ -221,7 +234,8 @@ export default function DashboardLayout({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-40 lg:hidden"
+              style={{ background: 'rgba(30,64,175,0.2)', backdropFilter: 'blur(4px)' }}
               onClick={() => setMobileOpen(false)}
               aria-hidden="true"
             />
@@ -238,16 +252,21 @@ export default function DashboardLayout({
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
+      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Bar */}
         <header
-          className="flex items-center gap-4 px-6 h-14 border-b border-border/50 flex-shrink-0"
-          style={{ background: 'hsl(0 0% 5%)' }}
+          className="flex items-center gap-4 px-6 h-14 flex-shrink-0"
+          style={{
+            background: '#ffffff',
+            borderBottom: '1px solid hsl(217 40% 90%)',
+            boxShadow: '0 1px 4px rgba(30,64,175,0.06)',
+          }}
         >
           <button
             id="mobile-menu-btn"
-            className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
+            className="lg:hidden transition-colors"
+            style={{ color: '#94a3b8' }}
             onClick={() => setMobileOpen(true)}
             aria-label="Open navigation menu"
             aria-expanded={mobileOpen}
@@ -262,7 +281,16 @@ export default function DashboardLayout({
             <Link
               href="/dashboard/notifications"
               id="header-notifications"
-              className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+              className="relative p-2 rounded-xl transition-all duration-200"
+              style={{ color: '#64748b' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.color = '#f4b413';
+                (e.currentTarget as HTMLElement).style.background = 'hsl(43 96% 52% / 0.10)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.color = '#64748b';
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }}
               aria-label="Notifications"
             >
               <Bell className="w-4.5 h-4.5" />
@@ -271,7 +299,16 @@ export default function DashboardLayout({
             <Link
               href="/dashboard/settings"
               id="header-settings"
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all"
+              className="p-2 rounded-xl transition-all duration-200"
+              style={{ color: '#64748b' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.color = '#1d6fe8';
+                (e.currentTarget as HTMLElement).style.background = 'hsl(217 91% 52% / 0.10)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.color = '#64748b';
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }}
               aria-label="Settings"
             >
               <Settings className="w-4.5 h-4.5" />
@@ -283,7 +320,7 @@ export default function DashboardLayout({
         <main
           className="flex-1 overflow-y-auto"
           id="main-content"
-          style={{ background: 'hsl(var(--background))' }}
+          style={{ background: '#f4f7ff' }}
         >
           {children}
         </main>
