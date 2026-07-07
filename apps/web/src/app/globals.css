@@ -13,12 +13,12 @@
   --popover-foreground: 220 25% 15%;
 
   /* ── Brand Blue ── */
-  --primary:       217 91% 52%;       /* #1d6fe8 royal blue */
+  --primary:       217 91% 52%;       /* #5271ff royal blue */
   --primary-foreground: 0 0% 100%;
   --primary-glow:  217 91% 52%;
 
   /* ── Golden ── */
-  --secondary:     43 96% 52%;        /* #f4b413 rich gold */
+  --secondary:     43 96% 52%;        /* #ff914d rich gold */
   --secondary-foreground: 30 15% 15%;
 
   /* ── Neutrals ── */
@@ -75,15 +75,15 @@
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: #f0f4ff; }
   ::-webkit-scrollbar-thumb {
-    background: hsl(217 91% 60% / 0.35);
+    background: rgba(82, 113, 255, 0.35);
     border-radius: 100px;
   }
-  ::-webkit-scrollbar-thumb:hover { background: hsl(217 91% 52% / 0.6); }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(82, 113, 255, 0.6); }
 
   /* ─── Selection ──────────────────────────────────────────────────────────── */
   ::selection {
-    background: hsl(217 91% 52% / 0.2);
-    color: hsl(217 91% 25%);
+    background: rgba(82, 113, 255, 0.2);
+    color: hsl(229 100% 40%);
   }
 }
 
@@ -94,30 +94,30 @@
   .glass-card {
     @apply relative overflow-hidden rounded-xl;
     background: #ffffff;
-    border: 1px solid hsl(217 40% 90%);
+    border: 1px solid #5271ff;
     box-shadow: 0 1px 4px rgba(30, 64, 175, 0.06), 0 4px 16px rgba(30, 64, 175, 0.04);
   }
 
   .glass-card:hover {
     box-shadow: 0 2px 8px rgba(30, 64, 175, 0.10), 0 8px 24px rgba(30, 64, 175, 0.07);
-    border-color: hsl(217 60% 82%);
+    border-color: #5271ff;
     transition: all 0.2s ease;
   }
 
   /* Gradient Text — Blue to Gold */
   .gradient-text {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(217 91% 45%), hsl(43 96% 48%));
+    background-image: linear-gradient(135deg, hsl(229 100% 60%), hsl(23 100% 60%));
   }
 
   /* Glow Button */
   .btn-glow {
     @apply relative overflow-hidden;
-    box-shadow: 0 4px 14px hsl(217 91% 52% / 0.3);
+    box-shadow: 0 4px 14px rgba(82, 113, 255, 0.3);
     transition: box-shadow 0.2s ease, transform 0.15s ease;
   }
   .btn-glow:hover {
-    box-shadow: 0 6px 20px hsl(217 91% 52% / 0.45);
+    box-shadow: 0 6px 20px rgba(82, 113, 255, 0.45);
     transform: translateY(-1px);
   }
 
@@ -135,9 +135,9 @@
   }
   .badge-upcoming {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full;
-    background: hsl(43 96% 52% / 0.12);
-    color: hsl(38 90% 35%);
-    border: 1px solid hsl(43 96% 52% / 0.3);
+    background: rgba(255, 145, 77, 0.12);
+    color: hsl(23 100% 50%);
+    border: 1px solid rgba(255, 145, 77, 0.3);
   }
   .badge-completed {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full;
@@ -153,16 +153,16 @@
   }
 
   .sidebar-item:hover {
-    color: hsl(38 90% 35%);
-    background: linear-gradient(135deg, hsl(43 96% 52% / 0.12), hsl(43 96% 52% / 0.06));
-    border-left: 3px solid hsl(43 96% 52%);
+    color: hsl(23 100% 50%);
+    background: linear-gradient(135deg, rgba(255, 145, 77, 0.12), rgba(255, 145, 77, 0.06));
+    border-left: 3px solid hsl(23 100% 65%);
     padding-left: calc(0.75rem - 3px);
   }
 
   .sidebar-item.active {
-    color: hsl(217 91% 42%);
-    background: linear-gradient(135deg, hsl(217 91% 52% / 0.12), hsl(217 91% 52% / 0.05));
-    border-left: 3px solid hsl(217 91% 52%);
+    color: hsl(229 100% 60%);
+    background: linear-gradient(135deg, rgba(82, 113, 255, 0.12), rgba(82, 113, 255, 0.05));
+    border-left: 3px solid hsl(229 100% 66%);
     padding-left: calc(0.75rem - 3px);
     font-weight: 600;
   }
@@ -182,18 +182,18 @@
     @apply w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200;
     background: #ffffff;
     border-color: hsl(220 20% 88%);
-    color: hsl(220 25% 15%);
+    color: hsl(222 100% 13%);
     outline: none;
   }
   .input-field::placeholder { color: hsl(220 15% 60%); }
   .input-field:focus {
-    border-color: hsl(217 91% 52%);
-    box-shadow: 0 0 0 3px hsl(217 91% 52% / 0.15);
+    border-color: hsl(229 100% 66%);
+    box-shadow: 0 0 0 3px rgba(82, 113, 255, 0.15);
   }
 
   /* Page */
   .page-header { @apply flex items-center justify-between mb-8; }
-  .page-title  { @apply text-2xl font-bold; color: hsl(220 25% 15%); }
+  .page-title  { @apply text-2xl font-bold; color: hsl(222 100% 13%); }
   .page-description { @apply text-sm mt-1; color: hsl(220 15% 50%); }
 }
 

@@ -34,9 +34,9 @@ const PLANS: Plan[] = [
     price: '$0',
     period: '/month',
     icon: Zap,
-    iconColor: '#1d6fe8',
-    iconBg: 'rgba(29, 111, 232, 0.1)',
-    borderColor: 'rgba(29, 111, 232, 0.2)',
+    iconColor: '#5271ff',
+    iconBg: 'rgba(82, 113, 255, 0.1)',
+    borderColor: 'rgba(82, 113, 255, 0.2)',
     current: true,
     features: [
       '1 webinar / month',
@@ -53,9 +53,9 @@ const PLANS: Plan[] = [
     price: '$49',
     period: '/month',
     icon: Crown,
-    iconColor: '#f4b413',
-    iconBg: 'rgba(244, 180, 19, 0.1)',
-    borderColor: 'rgba(244, 180, 19, 0.3)',
+    iconColor: '#ff914d',
+    iconBg: 'rgba(255, 145, 77, 0.1)',
+    borderColor: 'rgba(255, 145, 77, 0.3)',
     badge: 'Most Popular',
     features: [
       '10 webinars / month',
@@ -74,9 +74,9 @@ const PLANS: Plan[] = [
     price: '$149',
     period: '/month',
     icon: Building2,
-    iconColor: '#1d6fe8',
-    iconBg: 'rgba(29, 111, 232, 0.15)',
-    borderColor: 'rgba(29, 111, 232, 0.4)',
+    iconColor: '#5271ff',
+    iconBg: 'rgba(82, 113, 255, 0.15)',
+    borderColor: 'rgba(82, 113, 255, 0.4)',
     features: [
       'Unlimited webinars',
       '2,000 attendees max',
@@ -142,12 +142,12 @@ export default function BillingPage(): React.ReactElement {
             className="glass-card p-5 flex items-center gap-4"
             style={{
               background: '#ffffff',
-              borderColor: 'rgba(29, 111, 232, 0.2)',
+              borderColor: 'rgba(82, 113, 255, 0.2)',
             }}
           >
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(29, 111, 232, 0.1)' }}
+              style={{ background: 'rgba(82, 113, 255, 0.1)' }}
             >
               <Zap className="w-6 h-6 text-primary" />
             </div>
@@ -179,7 +179,7 @@ export default function BillingPage(): React.ReactElement {
                 {plan.badge && (
                   <span
                     className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(244, 180, 19, 0.15)', color: '#d97706' }}
+                    style={{ background: 'rgba(255, 145, 77, 0.15)', color: '#d97706' }}
                   >
                     {plan.badge}
                   </span>
@@ -230,8 +230,8 @@ export default function BillingPage(): React.ReactElement {
                     style={{
                       background: `linear-gradient(135deg, ${plan.iconColor}, ${
                         plan.id === 'plan-pro'
-                          ? '#3b82f6'
-                          : '#3b82f6'
+                          ? '#5271ff'
+                          : '#5271ff'
                       })`,
                     }}
                   >
@@ -253,7 +253,7 @@ export default function BillingPage(): React.ReactElement {
             <div className="p-12 flex flex-col items-center justify-center text-center space-y-3">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: 'rgba(29, 111, 232, 0.08)' }}
+                style={{ background: 'rgba(82, 113, 255, 0.08)' }}
               >
                 <FileText className="w-7 h-7 text-muted-foreground" />
               </div>

@@ -59,17 +59,17 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
       className="flex flex-col h-full"
       style={{
         background: 'linear-gradient(180deg, #f0f6ff 0%, #f8faff 100%)',
-        borderRight: '1px solid hsl(217 40% 88%)',
+        borderRight: '1px solid #5271ff',
         width: '256px',
         boxShadow: '2px 0 12px rgba(30, 64, 175, 0.06)',
       }}
       aria-label="Main navigation"
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 p-5" style={{ borderBottom: '1px solid hsl(217 40% 90%)' }}>
+      <div className="flex items-center gap-2.5 p-5" style={{ borderBottom: '1px solid #5271ff' }}>
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md"
-          style={{ background: 'linear-gradient(135deg, #1d6fe8, #2563eb)' }}
+          style={{ background: 'linear-gradient(135deg, #5271ff, #2563eb)' }}
         >
           <Zap className="w-4.5 h-4.5 text-white" fill="white" />
         </div>
@@ -95,11 +95,11 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
         <button
           id="org-selector"
           className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-200"
-          style={{ background: 'rgba(30,64,175,0.05)', border: '1px solid hsl(217 40% 90%)' }}
+          style={{ background: 'rgba(30,64,175,0.05)', border: '1px solid #5271ff' }}
         >
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold text-white shadow-sm"
-            style={{ background: 'linear-gradient(135deg, #1d6fe8, #f4b413)' }}
+            style={{ background: 'linear-gradient(135deg, #5271ff, #ff914d)' }}
           >
             Z
           </div>
@@ -137,7 +137,7 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
               {item.badge !== undefined && (
                 <span
                   className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full text-white"
-                  style={{ background: '#1d6fe8' }}
+                  style={{ background: '#5271ff' }}
                 >
                   {item.badge}
                 </span>
@@ -148,7 +148,7 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
       </div>
 
       {/* Bottom Nav */}
-      <div className="px-3 py-2 space-y-0.5" style={{ borderTop: '1px solid hsl(217 40% 90%)' }}>
+      <div className="px-3 py-2 space-y-0.5" style={{ borderTop: '1px solid #5271ff' }}>
         {bottomNavItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
@@ -177,14 +177,14 @@ function Sidebar({ onClose }: { onClose?: () => void }): React.ReactElement {
       </div>
 
       {/* User Profile */}
-      <div className="p-3" style={{ borderTop: '1px solid hsl(217 40% 90%)' }}>
+      <div className="p-3" style={{ borderTop: '1px solid #5271ff' }}>
         <div
           className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
-          style={{ background: 'rgba(30,64,175,0.04)', border: '1px solid hsl(217 40% 92%)' }}
+          style={{ background: 'rgba(30,64,175,0.04)', border: '1px solid #5271ff' }}
         >
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white shadow-sm"
-            style={{ background: 'linear-gradient(135deg, #1d6fe8, #f4b413)' }}
+            style={{ background: 'linear-gradient(135deg, #5271ff, #ff914d)' }}
             aria-hidden="true"
           >
             {getInitials(firstName.charAt(0), firstName.charAt(1) || 'Z')}
@@ -259,7 +259,7 @@ export default function DashboardLayout({
           className="flex items-center gap-4 px-6 h-14 flex-shrink-0"
           style={{
             background: '#ffffff',
-            borderBottom: '1px solid hsl(217 40% 90%)',
+            borderBottom: '1px solid #5271ff',
             boxShadow: '0 1px 4px rgba(30,64,175,0.06)',
           }}
         >
@@ -284,8 +284,8 @@ export default function DashboardLayout({
               className="relative p-2 rounded-xl transition-all duration-200"
               style={{ color: '#64748b' }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.color = '#f4b413';
-                (e.currentTarget as HTMLElement).style.background = 'hsl(43 96% 52% / 0.10)';
+                (e.currentTarget as HTMLElement).style.color = '#ff914d';
+                (e.currentTarget as HTMLElement).style.background = 'rgba(255, 145, 77, 0.10)';
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLElement).style.color = '#64748b';
@@ -302,8 +302,8 @@ export default function DashboardLayout({
               className="p-2 rounded-xl transition-all duration-200"
               style={{ color: '#64748b' }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.color = '#1d6fe8';
-                (e.currentTarget as HTMLElement).style.background = 'hsl(217 91% 52% / 0.10)';
+                (e.currentTarget as HTMLElement).style.color = '#5271ff';
+                (e.currentTarget as HTMLElement).style.background = 'rgba(82, 113, 255, 0.10)';
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLElement).style.color = '#64748b';

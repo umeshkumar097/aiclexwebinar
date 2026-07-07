@@ -28,7 +28,7 @@ function ResetPasswordForm() {
   }, [password]);
 
   const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-  const strengthColor = ['', '#ef4444', '#f59e0b', '#3b82f6', '#10b981'];
+  const strengthColor = ['', '#ef4444', '#f59e0b', '#5271ff', '#10b981'];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
