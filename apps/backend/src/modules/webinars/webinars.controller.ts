@@ -11,9 +11,11 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { FastifyRequest } from 'fastify';
 import { FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -346,16 +348,53 @@ export class WebinarsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: { filename: string; contentType: string },
   ) {
-    // Verify ownership
     await this.webinarsService.findOne(id, user.userId, user.orgId ?? null);
-
     const result = await this.r2.getUploadUrl(
       'uploads',
       id,
       body.filename ?? 'video.mp4',
       body.contentType ?? 'video/mp4',
-      3600, // 1 hour to upload
+      3600,
     );
+    return { success: true, data: result };
+  }
+
+  // ── POST /api/v1/webinars/:id/upload-video ────────────────────────────────
+  // Proxy upload: browser sends file to backend → backend uploads to R2
+  // Bypasses browser CORS restrictions on R2 bucket
+  @Post(':id/upload-video')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async uploadVideoProxy(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: FastifyRequest,
+  ) {
+    await this.webinarsService.findOne(id, user.userId, user.orgId ?? null);
+
+    // Collect multipart file using Fastify's built-in multipart
+    const data = await (req as any).file();
+    if (!data) throw new Error('No file received');
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of data.file) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+
+    const result = await this.r2.uploadBuffer(
+      'uploads',
+      id,
+      data.filename ?? 'video.mp4',
+      data.mimetype ?? 'video/mp4',
+      buffer,
+    );
+
+    // Save videoUrl to the webinar
+    await this.webinarsService.update(id, user.userId, user.orgId ?? null, {
+      videoUrl: result.publicUrl,
+    });
+
     return { success: true, data: result };
   }
 

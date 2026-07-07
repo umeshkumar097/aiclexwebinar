@@ -31,10 +31,13 @@ export default function RecordingsPage() {
   // Filter webinars that have either a replayUrl (recording of fully-live) or videoUrl (uploaded for semi-live)
   const recordings = webinars.filter((w) => !!w.replayUrl || !!w.videoUrl);
 
-  // Handle local video upload
+  // Handle local video upload via backend proxy (avoids R2 CORS issues)
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Reset input so same file can be re-selected
+    e.target.value = '';
 
     setUploading(true);
     setUploadProgress(0);
@@ -48,19 +51,15 @@ export default function RecordingsPage() {
         mode: 'semi_live',
       });
 
-      // 2. Get presigned R2 upload URL
-      // We will upload it into the 'uploads' folder (for semi-live compatibility)
-      const { uploadUrl, publicUrl } = await webinarApi.getVideoUploadUrl(
-        draft.id,
-        file.name,
-        file.type || 'video/mp4'
-      );
+      // 2. Upload via backend proxy (backend → R2), with XHR for progress tracking
+      const token = localStorage.getItem('auth_token') ?? '';
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // 3. Upload directly to Cloudflare R2 bucket with progress tracking
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('PUT', uploadUrl);
-        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+        xhr.open('POST', `${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/v1/webinars/${draft.id}/upload-video`);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
@@ -73,22 +72,20 @@ export default function RecordingsPage() {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
+            let msg = `Upload failed (${xhr.status})`;
+            try { msg = JSON.parse(xhr.responseText)?.message ?? msg; } catch { /* noop */ }
+            reject(new Error(msg));
           }
         };
 
         xhr.onerror = () => reject(new Error('Network error during upload'));
-        xhr.send(file);
+        xhr.send(formData);
       });
 
-      // 4. Update webinar with the videoUrl (so it is directly usable for Semi-Live) and replayUrl
-      await webinarApi.update(draft.id, {
-        videoUrl: publicUrl,
-        replayUrl: publicUrl,
-      });
-
-      alert('Recording uploaded and configured successfully!');
+      // 3. Refresh list — videoUrl was already saved by backend proxy endpoint
+      alert('✅ Recording uploaded successfully!');
       void fetchWebinars();
+
     } catch (err) {
       console.error('File upload failed:', err);
       alert('Upload failed: ' + (err instanceof Error ? err.message : String(err)));
@@ -98,6 +95,8 @@ export default function RecordingsPage() {
       setUploadingFilename('');
     }
   };
+
+
 
   // Delete recording reference (clear videoUrl / replayUrl or delete draft)
   const handleDelete = async (webinarId: string) => {
