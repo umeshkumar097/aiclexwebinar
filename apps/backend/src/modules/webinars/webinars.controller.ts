@@ -65,7 +65,7 @@ export class WebinarsController {
           showLiveCount:        s.showLiveCount !== false,
           enableChat:           s.enableChat !== false,
           enablePolls:          s.enablePolls !== false,
-          waitingThumbnailUrl:  (s.waitingThumbnailUrl as string) ?? null,
+
         },
       },
     };

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@zonvo/types": ["../../dist/packages/types/src"],
+      "@zonvo/constants": ["../../dist/packages/constants/src"],
+      "@zonvo/storage": ["../../dist/packages/storage/src"]
+    }
+  }
+}

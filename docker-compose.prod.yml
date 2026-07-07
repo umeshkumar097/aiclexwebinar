@@ -1,0 +1,144 @@
+version: '3.9'
+
+services:
+  # ─── PostgreSQL ───────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: zonvo_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_DB: zonvo_prod
+      POSTGRES_USER: ${DB_USER:-zonvo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-zonvo_prod_password}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-zonvo} -d zonvo_prod']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis (App) ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: zonvo_redis_prod
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 1024mb --maxmemory-policy noeviction
+    volumes:
+      - redisdata_prod:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── MinIO (If no Azure Blob used for MVP) ────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: zonvo_minio_prod
+    restart: always
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-zonvo_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-zonvo_minio_secret}
+    volumes:
+      - minidata_prod:/data
+    command: server /data --console-address ':9001'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinIO bucket initializer (runs once)
+  minio_init:
+    image: minio/mc:latest
+    container_name: zonvo_minio_init_prod
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-zonvo_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-zonvo_minio_secret}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      mc mb --ignore-existing local/zonvo-recordings-private;
+      mc mb --ignore-existing local/zonvo-resources-private;
+      mc mb --ignore-existing local/zonvo-assets-public;
+      mc mb --ignore-existing local/zonvo-exports-private;
+      mc mb --ignore-existing local/zonvo-thumbnails-private;
+      mc anonymous set public local/zonvo-assets-public;
+      echo 'MinIO buckets initialized';
+      "
+
+  # ─── NestJS Backend ───────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.backend
+      target: production
+    container_name: zonvo_backend_prod
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: zonvo_prod
+      DB_USER: ${DB_USER:-zonvo}
+      DB_PASSWORD: ${DB_PASSWORD:-zonvo_prod_password}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_REDIS_HOST: redis
+      QUEUE_REDIS_PORT: 6379
+      PORT: 3000
+    env_file:
+      - .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # ─── BullMQ Worker ────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.backend
+      target: production
+    container_name: zonvo_worker_prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: zonvo_prod
+      DB_USER: ${DB_USER:-zonvo}
+      DB_PASSWORD: ${DB_PASSWORD:-zonvo_prod_password}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_REDIS_HOST: redis
+      QUEUE_REDIS_PORT: 6379
+    env_file:
+      - .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "TS_NODE_PROJECT=/app/tsconfig.prod.json node -r tsconfig-paths/register dist/apps/backend/src/worker.js"
+
+volumes:
+  pgdata_prod:
+  redisdata_prod:
+  minidata_prod:
+
+networks:
+  default:
+    name: zonvo_network_prod

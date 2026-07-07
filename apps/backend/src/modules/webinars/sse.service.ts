@@ -49,7 +49,7 @@ export class SseService implements OnModuleDestroy {
 
     const full: SseEvent = { ...event, timestamp: Date.now() };
     let sent = 0;
-    for (const client of room.values()) {
+    for (const client of Array.from(room.values())) {
       try {
         client.write(full);
         sent++;
@@ -66,7 +66,7 @@ export class SseService implements OnModuleDestroy {
   getViewers(webinarId: string): { id: string; displayName: string; joinedAt: number }[] {
     const room = this.rooms.get(webinarId);
     if (!room) return [];
-    return [...room.values()].map((c) => ({
+    return Array.from(room.values()).map((c) => ({
       id: c.id,
       displayName: c.displayName,
       joinedAt: c.joinedAt,
@@ -80,7 +80,7 @@ export class SseService implements OnModuleDestroy {
 
   // ── Cleanup all rooms on shutdown ────────────────────────────────────────
   onModuleDestroy(): void {
-    for (const [wid, room] of this.rooms.entries()) {
+    for (const [wid, room] of Array.from(this.rooms.entries())) {
       for (const client of room.values()) {
         try { client.close(); } catch {}
       }

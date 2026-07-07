@@ -209,8 +209,8 @@ export class WebinarsService {
     displayName: string,
     password?: string,
   ): Promise<
-    | { mode: 'fully_live'; token: string; roomName: string; webinarTitle: string; livekitUrl: string }
-    | { mode: 'semi_live'; videoUrl: string; currentPositionSeconds: number; timedEvents: unknown[]; webinarTitle: string; webinarId: string }
+    | { mode: 'fully_live'; token: string; roomName: string; webinarTitle: string; livekitUrl: string; settings: any }
+    | { mode: 'semi_live'; videoUrl: string; currentPositionSeconds: number; timedEvents: unknown[]; webinarTitle: string; webinarId: string; settings: any }
   > {
     const webinar = await this.findByJoinCode(joinCode);
 

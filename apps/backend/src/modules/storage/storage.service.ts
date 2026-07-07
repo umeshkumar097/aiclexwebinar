@@ -69,7 +69,7 @@ export class StorageService {
     try {
       return await this.adapter.getSignedUrl(STORAGE_CONTAINERS[container], key, ttlSeconds);
     } catch (error) {
-      this.logger.error(`Failed to generate signed URL [${container}/${key}]:`, error);
+      this.logger.error(`Failed to generate signed URL [${String(container)}/${key}]:`, error);
       throw new InternalServerErrorException('Failed to generate file URL');
     }
   }
@@ -78,7 +78,7 @@ export class StorageService {
     try {
       await this.adapter.delete(STORAGE_CONTAINERS[container], key);
     } catch (error) {
-      this.logger.error(`Storage delete failed [${container}/${key}]:`, error);
+      this.logger.error(`Storage delete failed [${String(container)}/${key}]:`, error);
       throw new InternalServerErrorException('File delete failed');
     }
   }

@@ -8,7 +8,9 @@ RUN apk add --no-cache libc6-compat ffmpeg
 # ─── Dependencies ─────────────────────────────────────────
 FROM base AS deps
 COPY package*.json ./
-RUN npm ci
+COPY packages/ ./packages/
+COPY apps/backend/ ./apps/backend/
+RUN npm ci --legacy-peer-deps
 
 # ─── Development ──────────────────────────────────────────
 FROM base AS development
@@ -22,7 +24,7 @@ CMD ["npm", "run", "start:dev"]
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN npm run build --workspace=@zonvo/backend
 
 # ─── Production ───────────────────────────────────────────
 FROM node:20-alpine AS production
@@ -32,12 +34,16 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
-COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=builder /app/apps/backend/dist ./dist
+COPY --from=builder /app/apps/backend/package*.json ./
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --chown=nestjs:nodejs package.json ./
 
 # FFmpeg for video processing
 RUN apk add --no-cache ffmpeg
+
+RUN echo '{"compilerOptions": {"baseUrl": "./", "paths": {"@zonvo/*": ["./dist/packages/*/src"]}}}' > /app/tsconfig.prod.json
+RUN chown nestjs:nodejs /app/tsconfig.prod.json
 
 USER nestjs
 EXPOSE 3000
@@ -45,4 +51,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/v1/health || exit 1
 
-CMD ["node", "dist/main.js"]
+ENV TS_NODE_PROJECT=/app/tsconfig.prod.json
+CMD ["node", "-r", "tsconfig-paths/register", "dist/apps/backend/src/main.js"]
