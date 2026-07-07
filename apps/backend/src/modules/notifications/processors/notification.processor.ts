@@ -5,7 +5,6 @@ import { Job } from 'bullmq';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
-import { Resend } from 'resend';
 
 import { JOB_NAMES, QUEUE_NAMES } from '@zonvo/constants';
 
@@ -38,7 +37,6 @@ export class NotificationProcessor extends WorkerHost {
   async process(job: Job<NotificationJobData>): Promise<void> {
     const { notificationId, to, templateKey, variables, type } = job.data;
 
-    // Increment attempt count
     await this.notificationRepository.increment({ id: notificationId }, 'attempts', 1);
 
     try {
@@ -46,9 +44,8 @@ export class NotificationProcessor extends WorkerHost {
         await this.sendEmail(to, templateKey, variables);
       } else if (type === 'whatsapp' || job.name === JOB_NAMES.SEND_WHATSAPP) {
         await this.sendWhatsApp(to, templateKey, variables);
-      } else {
-        // in_app — just mark as sent (already stored in DB)
       }
+      // in_app — stored in DB, no external delivery needed
 
       await this.notificationRepository.update(notificationId, {
         status: NotificationStatus.SENT,
@@ -67,7 +64,6 @@ export class NotificationProcessor extends WorkerHost {
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      // Re-throw so BullMQ can handle retry/DLQ logic
       throw error;
     }
   }
@@ -77,27 +73,27 @@ export class NotificationProcessor extends WorkerHost {
     templateKey: string,
     variables: Record<string, string>,
   ): Promise<void> {
+    const smtpHost = this.configService.get('email.smtpHost' as never, { infer: true }) as string | undefined;
+    const smtpPort = this.configService.get('email.smtpPort' as never, { infer: true }) as number | undefined;
+    const smtpUser = this.configService.get('email.smtpUser' as never, { infer: true }) as string | undefined;
+    const smtpPassword = this.configService.get('email.smtpPassword' as never, { infer: true }) as string | undefined;
+    const smtpSecure = this.configService.get('email.smtpSecure' as never, { infer: true }) as boolean | undefined;
     const fromEmail = this.configService.get('email.fromEmail', { infer: true });
     const fromName = this.configService.get('email.fromName', { infer: true });
-    const smtpHost = this.configService.get('email.smtpHost', { infer: true });
 
     const { subject, html } = this.renderEmailTemplate(templateKey, variables);
 
-    // Use SMTP (nodemailer) if host is configured; fall back to Resend
-    if (smtpHost) {
-      const smtpPort = this.configService.get('email.smtpPort', { infer: true });
-      const smtpUser = this.configService.get('email.smtpUser', { infer: true });
-      const smtpPassword = this.configService.get('email.smtpPassword', { infer: true });
-      const smtpSecure = this.configService.get('email.smtpSecure', { infer: true });
-
+    // Use SMTP if configured
+    if (smtpHost && smtpUser && smtpPassword) {
       const transporter = nodemailer.createTransport({
         host: smtpHost,
-        port: smtpPort,
-        secure: smtpSecure, // true → SSL (port 465), false → STARTTLS (port 587)
+        port: smtpPort ?? 465,
+        secure: smtpSecure !== false, // true for port 465
         auth: {
           user: smtpUser,
           pass: smtpPassword,
         },
+        tls: { rejectUnauthorized: false },
       });
 
       await transporter.sendMail({
@@ -106,21 +102,25 @@ export class NotificationProcessor extends WorkerHost {
         subject,
         html,
       });
-    } else {
-      // Fallback: Resend API
-      const apiKey = this.configService.get('email.apiKey', { infer: true });
-      const resend = new Resend(apiKey);
 
-      const { error } = await resend.emails.send({
-        from: `${fromName} <${fromEmail}>`,
-        to: [to],
-        subject,
-        html,
-      });
+      this.logger.log(`SMTP email sent to ${to}: ${templateKey}`);
+      return;
+    }
 
-      if (error) {
-        throw new Error(`Resend API error: ${JSON.stringify(error)}`);
-      }
+    // Fallback to Resend if no SMTP configured
+    const { Resend } = await import('resend');
+    const apiKey = this.configService.get('email.apiKey', { infer: true });
+    const resend = new Resend(apiKey);
+
+    const { error } = await resend.emails.send({
+      from: `${fromName} <${fromEmail}>`,
+      to: [to],
+      subject,
+      html,
+    });
+
+    if (error) {
+      throw new Error(`Resend API error: ${JSON.stringify(error)}`);
     }
   }
 
@@ -172,191 +172,129 @@ export class NotificationProcessor extends WorkerHost {
     templateKey: string,
     variables: Record<string, string>,
   ): { subject: string; html: string } {
-    // Template rendering — in production this would use React Email templates
-    // For Phase 1, we use simple string interpolation
+    const v = variables;
+
+    const brandHeader = `
+      <div style="text-align:center;margin-bottom:24px;">
+        <h1 style="color:#8b5cf6;font-size:26px;margin:0;letter-spacing:-0.5px;">Aiclex Webinar</h1>
+      </div>
+    `;
+    const footer = `
+      <div style="margin-top:32px;padding-top:24px;border-top:1px solid #27272a;text-align:center;">
+        <p style="color:#52525b;font-size:12px;margin:0;">© 2025 Aiclex Webinar &nbsp;|&nbsp; <a href="https://webinar.zonvo.tech" style="color:#8b5cf6;text-decoration:none;">webinar.zonvo.tech</a></p>
+      </div>
+    `;
+    const wrap = (body: string) => `
+      <div style="font-family:'Inter',Arial,sans-serif;max-width:600px;margin:0 auto;background:#0f0f0f;color:#ffffff;padding:40px 32px;border-radius:16px;border:1px solid #27272a;">
+        ${brandHeader}${body}${footer}
+      </div>
+    `;
+    const btn = (label: string, href: string, color = '#8b5cf6') => `
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${href}" style="background:${color};color:#fff;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">${label}</a>
+      </div>
+    `;
+    const info = (label: string, value: string) => `
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #27272a;">
+        <span style="color:#71717a;font-size:14px;">${label}</span>
+        <span style="color:#fff;font-size:14px;font-weight:600;">${value}</span>
+      </div>
+    `;
+
     const templates: Record<string, { subject: string; body: string }> = {
       'auth.verify_email': {
         subject: 'Verify your email address',
-        body: `
-          <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #ffffff; padding: 40px; border-radius: 12px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #8b5cf6; font-size: 28px; margin: 0;">Aiclex Webinar</h1>
-            </div>
-            <h2 style="font-size: 22px; margin-bottom: 16px;">Hi ${variables['firstName'] ?? 'there'},</h2>
-            <p style="color: #a1a1aa; line-height: 1.6; margin-bottom: 24px;">
-              Please verify your email address to activate your account.
-            </p>
-            <div style="text-align: center; margin-bottom: 32px;">
-              <a href="${variables['verifyLink'] ?? '#'}" style="background: #8b5cf6; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-                Verify Email Address
-              </a>
-            </div>
-            <p style="color: #71717a; font-size: 14px;">This link expires in 24 hours. If you did not create an account, you can safely ignore this email.</p>
-          </div>
-        `,
+        body: wrap(`
+          <h2 style="font-size:22px;margin-bottom:12px;">Hi ${v['firstName'] ?? 'there'}, 👋</h2>
+          <p style="color:#a1a1aa;line-height:1.7;margin-bottom:20px;">Please verify your email address to activate your account.</p>
+          ${btn('Verify Email Address', v['verifyLink'] ?? '#')}
+          <p style="color:#71717a;font-size:13px;text-align:center;">Link expires in 24 hours.</p>
+        `),
       },
       'auth.reset_password': {
         subject: 'Reset your password',
-        body: `
-          <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #ffffff; padding: 40px; border-radius: 12px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #8b5cf6; font-size: 28px; margin: 0;">Aiclex Webinar</h1>
-            </div>
-            <h2 style="font-size: 22px; margin-bottom: 16px;">Hi ${variables['firstName'] ?? 'there'},</h2>
-            <p style="color: #a1a1aa; line-height: 1.6; margin-bottom: 24px;">
-              We received a request to reset your password. Click the button below to set a new password.
-            </p>
-            <div style="text-align: center; margin-bottom: 32px;">
-              <a href="${variables['resetLink'] ?? '#'}" style="background: #8b5cf6; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-                Reset Password
-              </a>
-            </div>
-            <p style="color: #71717a; font-size: 14px;">This link expires in ${variables['expiryHours'] ?? '1'} hour. If you did not request this, please ignore this email and your password will remain unchanged.</p>
-          </div>
-        `,
+        body: wrap(`
+          <h2 style="font-size:22px;margin-bottom:12px;">Hi ${v['firstName'] ?? 'there'},</h2>
+          <p style="color:#a1a1aa;line-height:1.7;margin-bottom:20px;">We received a request to reset your password.</p>
+          ${btn('Reset Password', v['resetLink'] ?? '#')}
+          <p style="color:#71717a;font-size:13px;text-align:center;">Expires in ${v['expiryHours'] ?? '1'} hour. If you didn't request this, ignore this email.</p>
+        `),
       },
       'member.invited': {
-        subject: `You've been invited to join ${variables['orgName'] ?? 'an organization'}`,
-        body: `
-          <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #ffffff; padding: 40px; border-radius: 12px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #8b5cf6; font-size: 28px; margin: 0;">Aiclex Webinar</h1>
-            </div>
-            <h2 style="font-size: 22px; margin-bottom: 16px;">You have been invited!</h2>
-            <p style="color: #a1a1aa; line-height: 1.6; margin-bottom: 24px;">
-              <strong>${variables['inviterName'] ?? 'Someone'}</strong> has invited you to join <strong>${variables['orgName'] ?? 'their organization'}</strong> as a <strong>${variables['role'] ?? 'member'}</strong>.
-            </p>
-            <div style="text-align: center; margin-bottom: 32px;">
-              <a href="${variables['acceptLink'] ?? '#'}" style="background: #8b5cf6; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-                Accept Invitation
-              </a>
-            </div>
-            <p style="color: #71717a; font-size: 14px;">This invitation expires in 24 hours.</p>
-          </div>
-        `,
+        subject: `You've been invited to join ${v['orgName'] ?? 'an organization'}`,
+        body: wrap(`
+          <h2 style="font-size:22px;margin-bottom:12px;">You have been invited! 🎉</h2>
+          <p style="color:#a1a1aa;line-height:1.7;margin-bottom:20px;">
+            <strong>${v['inviterName'] ?? 'Someone'}</strong> invited you to join <strong>${v['orgName'] ?? 'an organization'}</strong> as <strong>${v['role'] ?? 'member'}</strong>.
+          </p>
+          ${btn('Accept Invitation', v['acceptLink'] ?? '#')}
+          <p style="color:#71717a;font-size:13px;text-align:center;">Invitation expires in 24 hours.</p>
+        `),
       },
 
-      // ── Webinar Templates ────────────────────────────────────────────────────
-
+      // ── Webinar templates ─────────────────────────────────────────────────
       'webinar.registration_confirmed': {
-        subject: `You are registered for ${variables['webinarTitle'] ?? 'the webinar'}`,
-        body: `
-          <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #ffffff; padding: 40px; border-radius: 12px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #8b5cf6; font-size: 28px; margin: 0;">Aiclex Webinar</h1>
-            </div>
-            <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid #8b5cf6; border-radius: 12px; padding: 24px; margin-bottom: 28px;">
-              <p style="color: #8b5cf6; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px;">Registration Confirmed ✓</p>
-              <h2 style="font-size: 22px; margin: 0 0 16px; color: #fff;">${variables['webinarTitle'] ?? 'Webinar'}</h2>
-              <p style="color: #a1a1aa; margin: 4px 0;">📅 <strong style="color:#fff;">${variables['webinarDate'] ?? 'TBD'}</strong></p>
-              <p style="color: #a1a1aa; margin: 4px 0;">🕐 <strong style="color:#fff;">${variables['webinarTime'] ?? 'TBD'}</strong></p>
-              <p style="color: #a1a1aa; margin: 4px 0;">🎙️ Hosted by <strong style="color:#fff;">${variables['hostName'] ?? 'The Host'}</strong></p>
-            </div>
-            <h3 style="font-size: 18px; margin-bottom: 12px;">Hi ${variables['firstName'] ?? 'there'},</h3>
-            <p style="color: #a1a1aa; line-height: 1.6; margin-bottom: 24px;">
-              You are officially registered! We are excited to have you join us. Save the details above and use the button below to join when the webinar starts.
-            </p>
-            <div style="text-align: center; margin-bottom: 32px;">
-              <a href="${variables['joinLink'] ?? '#'}" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px; display: inline-block; letter-spacing: 0.5px;">
-                Join Webinar →
-              </a>
-            </div>
-            <p style="color: #71717a; font-size: 13px; text-align: center;">You will also receive reminder emails before the webinar starts.</p>
+        subject: `✅ You're registered for "${v['webinarTitle'] ?? 'the webinar'}"`,
+        body: wrap(`
+          <h2 style="font-size:22px;margin-bottom:12px;">You're all set, ${v['firstName'] ?? 'there'}! 🎉</h2>
+          <p style="color:#a1a1aa;line-height:1.7;margin-bottom:20px;">Your registration has been confirmed. Here are your webinar details:</p>
+          <div style="background:#18181b;border-radius:12px;padding:20px;margin-bottom:20px;">
+            ${info('Webinar', v['webinarTitle'] ?? '')}
+            ${info('Date', v['webinarDate'] ?? '')}
+            ${info('Time', v['webinarTime'] ?? '')}
+            ${info('Host', v['hostName'] ?? '')}
           </div>
-        `,
+          ${btn('Join Webinar', v['joinLink'] ?? '#', '#8b5cf6')}
+          <p style="color:#71717a;font-size:13px;text-align:center;">Add to your calendar so you don't miss it!</p>
+        `),
       },
-
       'webinar.reminder_24h': {
-        subject: `Your webinar starts in 24 hours: ${variables['webinarTitle'] ?? 'Webinar'}`,
-        body: `
-          <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #ffffff; padding: 40px; border-radius: 12px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #8b5cf6; font-size: 28px; margin: 0;">Aiclex Webinar</h1>
-            </div>
-            <div style="background: #1a1a2e; border-left: 4px solid #8b5cf6; padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 28px;">
-              <p style="color: #8b5cf6; font-size: 13px; margin: 0 0 4px; font-weight: 600;">⏰ REMINDER — 24 HOURS TO GO</p>
-              <p style="font-size: 18px; margin: 0; font-weight: 700;">${variables['webinarTitle'] ?? 'Webinar'}</p>
-            </div>
-            <p style="color: #a1a1aa; line-height: 1.6; margin-bottom: 20px;">Hi ${variables['firstName'] ?? 'there'}, your webinar starts tomorrow!</p>
-            <p style="color: #a1a1aa; margin: 6px 0;">📅 <strong style="color:#fff;">${variables['webinarDate'] ?? 'TBD'}</strong></p>
-            <p style="color: #a1a1aa; margin: 6px 0 24px;">🕐 <strong style="color:#fff;">${variables['webinarTime'] ?? 'TBD'}</strong></p>
-            <div style="text-align: center; margin-bottom: 32px;">
-              <a href="${variables['joinLink'] ?? '#'}" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 700; display: inline-block;">
-                Join Tomorrow →
-              </a>
-            </div>
-            <p style="color: #71717a; font-size: 13px; text-align: center;">Hosted by ${variables['hostName'] ?? 'the host'}</p>
+        subject: `⏰ Reminder: "${v['webinarTitle'] ?? 'Webinar'}" starts in 24 hours`,
+        body: wrap(`
+          <h2 style="font-size:22px;margin-bottom:12px;">See you tomorrow, ${v['firstName'] ?? 'there'}!</h2>
+          <p style="color:#a1a1aa;line-height:1.7;margin-bottom:20px;">Your upcoming webinar is just 24 hours away. Don't forget to join!</p>
+          <div style="background:#18181b;border-radius:12px;padding:20px;margin-bottom:20px;">
+            ${info('Webinar', v['webinarTitle'] ?? '')}
+            ${info('Date', v['webinarDate'] ?? '')}
+            ${info('Time', v['webinarTime'] ?? '')}
           </div>
-        `,
+          ${btn('Join Webinar', v['joinLink'] ?? '#', '#8b5cf6')}
+        `),
       },
-
       'webinar.reminder_1h': {
-        subject: `Your webinar starts in 1 hour: ${variables['webinarTitle'] ?? 'Webinar'}`,
-        body: `
-          <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #ffffff; padding: 40px; border-radius: 12px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #8b5cf6; font-size: 28px; margin: 0;">Aiclex Webinar</h1>
-            </div>
-            <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid #f59e0b; border-radius: 12px; padding: 20px; margin-bottom: 28px; text-align: center;">
-              <p style="color: #f59e0b; font-size: 36px; margin: 0 0 4px;">⏱️</p>
-              <p style="color: #f59e0b; font-weight: 700; font-size: 15px; margin: 0;">STARTING IN 1 HOUR</p>
-            </div>
-            <h2 style="font-size: 20px; margin-bottom: 12px;">${variables['webinarTitle'] ?? 'Webinar'}</h2>
-            <p style="color: #a1a1aa; line-height: 1.6; margin-bottom: 16px;">Hi ${variables['firstName'] ?? 'there'}, your webinar is almost here! Make sure you are ready to join.</p>
-            <p style="color: #a1a1aa; margin: 6px 0;">🕐 <strong style="color:#fff;">Starts at ${variables['webinarTime'] ?? 'TBD'}</strong> on ${variables['webinarDate'] ?? 'TBD'}</p>
-            <div style="text-align: center; margin: 28px 0;">
-              <a href="${variables['joinLink'] ?? '#'}" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 16px 44px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px; display: inline-block;">
-                Get Ready →
-              </a>
-            </div>
-            <p style="color: #71717a; font-size: 13px; text-align: center;">Hosted by ${variables['hostName'] ?? 'the host'}</p>
+        subject: `🔔 "${v['webinarTitle'] ?? 'Webinar'}" starts in 1 hour!`,
+        body: wrap(`
+          <h2 style="font-size:22px;margin-bottom:12px;">Starting soon, ${v['firstName'] ?? 'there'}!</h2>
+          <p style="color:#a1a1aa;line-height:1.7;margin-bottom:20px;"><strong style="color:#fff;">${v['webinarTitle'] ?? 'Your webinar'}</strong> starts in just 1 hour. Get ready to join!</p>
+          <div style="background:#18181b;border-radius:12px;padding:20px;margin-bottom:20px;">
+            ${info('Time', v['webinarTime'] ?? '')}
+            ${info('Host', v['hostName'] ?? '')}
           </div>
-        `,
+          ${btn('Join Now', v['joinLink'] ?? '#', '#7c3aed')}
+        `),
       },
-
       'webinar.reminder_15m': {
-        subject: `${variables['webinarTitle'] ?? 'Your webinar'} is starting in 15 minutes!`,
-        body: `
-          <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #ffffff; padding: 40px; border-radius: 12px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #8b5cf6; font-size: 28px; margin: 0;">Aiclex Webinar</h1>
-            </div>
-            <div style="background: linear-gradient(135deg, #450a0a, #7f1d1d); border: 1px solid #ef4444; border-radius: 12px; padding: 20px; margin-bottom: 28px; text-align: center;">
-              <p style="color: #fca5a5; font-size: 42px; margin: 0;">🚨</p>
-              <p style="color: #ef4444; font-weight: 800; font-size: 18px; margin: 8px 0 0; letter-spacing: 1px;">15 MINUTES LEFT!</p>
-            </div>
-            <h2 style="font-size: 20px; margin-bottom: 12px;">${variables['webinarTitle'] ?? 'Webinar'}</h2>
-            <p style="color: #a1a1aa; line-height: 1.6; margin-bottom: 20px;">Hi ${variables['firstName'] ?? 'there'}, your webinar starts in just 15 minutes. Click below to join now!</p>
-            <div style="text-align: center; margin: 24px 0;">
-              <a href="${variables['joinLink'] ?? '#'}" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 18px 52px; border-radius: 10px; text-decoration: none; font-weight: 800; font-size: 18px; display: inline-block; letter-spacing: 0.5px; box-shadow: 0 4px 24px rgba(239,68,68,0.4);">
-                🔴 JOIN NOW
-              </a>
-            </div>
-            <p style="color: #71717a; font-size: 13px; text-align: center; margin-top: 20px;">Hosted by ${variables['hostName'] ?? 'the host'}</p>
-          </div>
-        `,
+        subject: `🚨 "${v['webinarTitle'] ?? 'Webinar'}" starts in 15 minutes!`,
+        body: wrap(`
+          <h2 style="font-size:22px;margin-bottom:12px;">Almost time, ${v['firstName'] ?? 'there'}! ⚡</h2>
+          <p style="color:#a1a1aa;line-height:1.7;margin-bottom:20px;"><strong style="color:#fff;">${v['webinarTitle'] ?? 'Your webinar'}</strong> is starting in <strong style="color:#f59e0b;">15 minutes</strong>. Click below to join!</p>
+          ${btn('🚀 Join Now', v['joinLink'] ?? '#', '#dc2626')}
+          <p style="color:#71717a;font-size:13px;text-align:center;">Make sure your browser is ready and volume is on.</p>
+        `),
       },
-
       'webinar.started': {
-        subject: `${variables['webinarTitle'] ?? 'Your webinar'} is LIVE now!`,
-        body: `
-          <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #ffffff; padding: 40px; border-radius: 12px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="color: #8b5cf6; font-size: 28px; margin: 0;">Aiclex Webinar</h1>
+        subject: `🔴 LIVE NOW: "${v['webinarTitle'] ?? 'Webinar'}" has started!`,
+        body: wrap(`
+          <div style="text-align:center;margin-bottom:20px;">
+            <div style="display:inline-flex;align-items:center;gap:8px;background:#dc2626;padding:8px 20px;border-radius:999px;">
+              <span style="width:8px;height:8px;background:#fff;border-radius:50%;display:inline-block;"></span>
+              <span style="color:#fff;font-weight:700;font-size:14px;letter-spacing:0.05em;">LIVE NOW</span>
             </div>
-            <div style="background: linear-gradient(135deg, #022c22, #064e3b); border: 1px solid #10b981; border-radius: 12px; padding: 20px; margin-bottom: 28px; text-align: center;">
-              <span style="background: #10b981; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; letter-spacing: 2px; display: inline-block; margin-bottom: 10px;">● LIVE</span>
-              <h2 style="font-size: 22px; margin: 0; color: #fff;">${variables['webinarTitle'] ?? 'Webinar'}</h2>
-            </div>
-            <p style="color: #a1a1aa; line-height: 1.6; margin-bottom: 24px;">Hi ${variables['firstName'] ?? 'there'}, the webinar you registered for has just started! Join now before you miss anything.</p>
-            <div style="text-align: center; margin: 24px 0;">
-              <a href="${variables['joinLink'] ?? '#'}" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 18px 52px; border-radius: 10px; text-decoration: none; font-weight: 800; font-size: 18px; display: inline-block; letter-spacing: 0.5px; box-shadow: 0 4px 24px rgba(16,185,129,0.4);">
-                🎙️ JOIN LIVE NOW
-              </a>
-            </div>
-            <p style="color: #71717a; font-size: 13px; text-align: center; margin-top: 20px;">Hosted by ${variables['hostName'] ?? 'the host'}</p>
           </div>
-        `,
+          <h2 style="font-size:22px;margin-bottom:12px;text-align:center;">${v['webinarTitle'] ?? 'Your webinar'} is live!</h2>
+          <p style="color:#a1a1aa;line-height:1.7;margin-bottom:20px;text-align:center;">Hi ${v['firstName'] ?? 'there'} — the session has just started. Join now!</p>
+          ${btn('🔴 Join Live Now', v['joinLink'] ?? '#', '#dc2626')}
+        `),
       },
     };
 
@@ -364,7 +302,7 @@ export class NotificationProcessor extends WorkerHost {
     if (!template) {
       return {
         subject: 'Notification from Aiclex Webinar',
-        html: `<p>You have a new notification from Aiclex Webinar.</p>`,
+        html: wrap(`<p style="color:#a1a1aa;">You have a new notification.</p>`),
       };
     }
 
