@@ -88,9 +88,9 @@ export default function RegisterPage(): React.ReactElement {
         >
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-            style={{ background: 'hsl(142 71% 45% / 0.15)', border: '2px solid hsl(142 71% 45% / 0.4)' }}
+            style={{ background: 'hsl(142 60% 40% / 0.1)', border: '2px solid hsl(142 60% 40% / 0.25)' }}
           >
-            <Check className="w-8 h-8" style={{ color: 'hsl(142 71% 55%)' }} />
+            <Check className="w-8 h-8" style={{ color: 'hsl(142 60% 40%)' }} />
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-foreground">Account Created!</h2>
@@ -101,8 +101,8 @@ export default function RegisterPage(): React.ReactElement {
           <button
             id="go-to-login"
             onClick={() => router.push('/login')}
-            className="w-full py-3 rounded-lg font-semibold text-sm text-white btn-glow"
-            style={{ background: 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))' }}
+            className="w-full py-3 rounded-xl font-bold text-sm text-white btn-glow shadow-md"
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #3b82f6)' }}
           >
             Go to Login
           </button>
@@ -122,12 +122,12 @@ export default function RegisterPage(): React.ReactElement {
           className="flex items-center gap-2.5 justify-center mb-8"
         >
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))' }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #f4b413)' }}
           >
             <Zap className="w-5 h-5 text-white" fill="white" />
           </div>
-          <span className="text-xl font-bold text-white">Zonvo</span>
+          <span className="text-xl font-bold text-foreground">Zonvo</span>
         </motion.div>
 
         <motion.div
@@ -151,9 +151,9 @@ export default function RegisterPage(): React.ReactElement {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm"
               style={{
-                background: 'hsl(0 84% 60% / 0.12)',
-                border: '1px solid hsl(0 84% 60% / 0.3)',
-                color: 'hsl(0 84% 70%)',
+                background: 'hsl(0 84% 55% / 0.1)',
+                border: '1px solid hsl(0 84% 55% / 0.25)',
+                color: 'hsl(0 84% 45%)',
               }}
               role="alert"
             >
@@ -267,18 +267,18 @@ export default function RegisterPage(): React.ReactElement {
                       <div
                         key={rule.label}
                         className="flex items-center gap-1.5 text-xs"
-                        style={{ color: passed ? 'hsl(142 71% 55%)' : 'hsl(0 0% 50%)' }}
+                        style={{ color: passed ? 'hsl(142 60% 40%)' : 'hsl(220 15% 45%)' }}
                       >
                         <div
                           className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{
                             background: passed
-                              ? 'hsl(142 71% 45% / 0.2)'
-                              : 'hsl(0 0% 20%)',
-                            border: `1px solid ${passed ? 'hsl(142 71% 45% / 0.5)' : 'hsl(0 0% 30%)'}`,
+                              ? 'hsl(142 60% 40% / 0.1)'
+                              : 'hsl(220 20% 90%)',
+                            border: `1px solid ${passed ? 'hsl(142 60% 40% / 0.3)' : 'hsl(220 20% 80%)'}`,
                           }}
                         >
-                          {passed && <Check className="w-2 h-2" style={{ color: 'hsl(142 71% 55%)' }} />}
+                          {passed && <Check className="w-2 h-2" style={{ color: 'hsl(142 60% 40%)' }} />}
                         </div>
                         {rule.label}
                       </div>
@@ -340,11 +340,11 @@ export default function RegisterPage(): React.ReactElement {
               type="submit"
               id="register-submit"
               disabled={isSubmitting}
-              className="w-full py-3 px-4 rounded-lg font-semibold text-sm text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed btn-glow flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed btn-glow flex items-center justify-center gap-2 shadow-md"
               style={{
                 background: isSubmitting
-                  ? 'hsl(262 83% 55%)'
-                  : 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))',
+                  ? '#3b82f6'
+                  : 'linear-gradient(135deg, #1d6fe8, #3b82f6)',
               }}
             >
               {isSubmitting ? (

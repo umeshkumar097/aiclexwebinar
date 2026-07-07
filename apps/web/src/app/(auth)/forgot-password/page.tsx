@@ -51,7 +51,7 @@ export default function ForgotPasswordPage(): React.ReactElement {
         >
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-            style={{ background: 'hsl(262 83% 67% / 0.15)', border: '2px solid hsl(262 83% 67% / 0.4)' }}
+            style={{ background: 'hsl(217 91% 60% / 0.1)', border: '2px solid hsl(217 91% 60% / 0.25)' }}
           >
             <MailCheck className="w-8 h-8 text-primary" />
           </div>
@@ -85,12 +85,12 @@ export default function ForgotPasswordPage(): React.ReactElement {
       >
         <div className="flex items-center gap-2.5 justify-center">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))' }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #f4b413)' }}
           >
             <Zap className="w-5 h-5 text-white" fill="white" />
           </div>
-          <span className="text-xl font-bold text-white">Zonvo</span>
+          <span className="text-xl font-bold text-foreground">Zonvo</span>
         </div>
 
         <div className="glass-card p-8 space-y-6">
@@ -105,9 +105,9 @@ export default function ForgotPasswordPage(): React.ReactElement {
             <div
               className="px-4 py-3 rounded-lg text-sm"
               style={{
-                background: 'hsl(0 84% 60% / 0.12)',
-                border: '1px solid hsl(0 84% 60% / 0.3)',
-                color: 'hsl(0 84% 70%)',
+                background: 'hsl(0 84% 55% / 0.1)',
+                border: '1px solid hsl(0 84% 55% / 0.25)',
+                color: 'hsl(0 84% 45%)',
               }}
               role="alert"
             >
@@ -141,8 +141,8 @@ export default function ForgotPasswordPage(): React.ReactElement {
               type="submit"
               id="forgot-password-submit"
               disabled={isSubmitting}
-              className="w-full py-3 rounded-lg font-semibold text-sm text-white disabled:opacity-60 btn-glow flex items-center justify-center gap-2"
-              style={{ background: 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))' }}
+              className="w-full py-3 rounded-xl font-bold text-sm text-white disabled:opacity-60 btn-glow flex items-center justify-center gap-2 shadow-md"
+              style={{ background: 'linear-gradient(135deg, #1d6fe8, #3b82f6)' }}
             >
               {isSubmitting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" />Sending…</>

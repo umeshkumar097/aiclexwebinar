@@ -64,8 +64,8 @@ export default function LoginPage(): React.ReactElement {
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className="hidden lg:flex lg:w-1/2 xl:w-3/5 flex-col justify-between p-12 relative overflow-hidden"
         style={{
-          background:
-            'linear-gradient(135deg, hsl(262 83% 8%) 0%, hsl(217 91% 5%) 100%)',
+          background: 'linear-gradient(135deg, #f4f7ff 0%, #e0edff 100%)',
+          borderRight: '1px solid hsl(217 40% 90%)',
         }}
       >
         {/* Background blobs */}
@@ -75,36 +75,36 @@ export default function LoginPage(): React.ReactElement {
         >
           <div
             className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20"
-            style={{ background: 'hsl(262 83% 67%)' }}
+            style={{ background: '#1d6fe8' }}
           />
           <div
             className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-3xl opacity-15"
-            style={{ background: 'hsl(217 91% 60%)' }}
+            style={{ background: '#f4b413' }}
           />
         </div>
 
         {/* Logo */}
         <div className="relative flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
             style={{
-              background: 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))',
+              background: 'linear-gradient(135deg, #1d6fe8, #f4b413)',
             }}
           >
             <Zap className="w-5 h-5 text-white" fill="white" />
           </div>
-          <span className="text-xl font-bold text-white tracking-tight">Zonvo</span>
+          <span className="text-xl font-bold text-foreground tracking-tight">Zonvo</span>
         </div>
 
         {/* Hero Content */}
         <div className="relative space-y-8">
           <div>
-            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight">
+            <h1 className="text-4xl xl:text-5xl font-bold text-foreground leading-tight">
               The future of{' '}
               <span className="gradient-text">semi-live</span>{' '}
               webinars.
             </h1>
-            <p className="mt-4 text-lg text-white/60 max-w-md leading-relaxed">
+            <p className="mt-4 text-lg text-muted-foreground max-w-md leading-relaxed">
               Pre-record your content, go live when it matters. Deliver a
               premium webinar experience at scale — without the stress.
             </p>
@@ -121,8 +121,8 @@ export default function LoginPage(): React.ReactElement {
                 key={stat.label}
                 className="glass-card px-4 py-3 flex flex-col gap-0.5"
               >
-                <span className="text-xl font-bold text-white">{stat.value}</span>
-                <span className="text-xs text-white/50">{stat.label}</span>
+                <span className="text-xl font-bold text-foreground">{stat.value}</span>
+                <span className="text-xs text-muted-foreground">{stat.label}</span>
               </div>
             ))}
           </div>
@@ -130,10 +130,10 @@ export default function LoginPage(): React.ReactElement {
 
         {/* Footer quote */}
         <div className="relative">
-          <blockquote className="text-sm text-white/40 italic">
+          <blockquote className="text-sm text-muted-foreground italic">
             &ldquo;Zonvo changed how we run webinars. Our show rate went from 30% to 80%.&rdquo;
           </blockquote>
-          <p className="mt-2 text-xs text-white/30">— Coach Sarah M., 12K students</p>
+          <p className="mt-2 text-xs text-muted-foreground/80">— Coach Sarah M., 12K students</p>
         </div>
       </motion.div>
 
@@ -148,14 +148,14 @@ export default function LoginPage(): React.ReactElement {
           {/* Mobile Logo */}
           <div className="flex lg:hidden items-center gap-2.5 justify-center">
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              className="w-9 h-9 rounded-lg flex items-center justify-center shadow-sm"
               style={{
-                background: 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))',
+                background: 'linear-gradient(135deg, #1d6fe8, #f4b413)',
               }}
             >
               <Zap className="w-4.5 h-4.5 text-white" fill="white" />
             </div>
-            <span className="text-lg font-bold text-white">Zonvo</span>
+            <span className="text-lg font-bold text-foreground">Zonvo</span>
           </div>
 
           {/* Header */}
@@ -175,9 +175,9 @@ export default function LoginPage(): React.ReactElement {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm"
                 style={{
-                  background: 'hsl(0 84% 60% / 0.12)',
-                  border: '1px solid hsl(0 84% 60% / 0.3)',
-                  color: 'hsl(0 84% 70%)',
+                  background: 'hsl(0 84% 55% / 0.1)',
+                  border: '1px solid hsl(0 84% 55% / 0.25)',
+                  color: 'hsl(0 84% 45%)',
                 }}
                 role="alert"
               >
@@ -270,11 +270,11 @@ export default function LoginPage(): React.ReactElement {
               type="submit"
               id="login-submit"
               disabled={isSubmitting}
-              className="w-full py-3 px-4 rounded-lg font-semibold text-sm text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed btn-glow flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed btn-glow flex items-center justify-center gap-2 shadow-md"
               style={{
                 background: isSubmitting
-                  ? 'hsl(262 83% 55%)'
-                  : 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))',
+                  ? '#3b82f6'
+                  : 'linear-gradient(135deg, #1d6fe8, #3b82f6)',
               }}
             >
               {isSubmitting ? (
