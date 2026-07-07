@@ -198,7 +198,8 @@ export class AuthService {
     }
 
     if (!user.emailVerifiedAt) {
-      throw new ForbiddenException('Please verify your email address to log in.');
+      await this.sendVerificationEmail(user.id, user.email, user.profile?.firstName ?? 'User');
+      throw new ForbiddenException('Please verify your email address to log in. A new verification link has been sent.');
     }
 
 
