@@ -127,18 +127,18 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6 text-white">
+    <div className="p-6 max-w-6xl mx-auto space-y-6 text-foreground">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.06] pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Analytics & Reports</h1>
-          <p className="text-white/40 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Track registrations, join rates, and audience watch times across all your webinars.
           </p>
         </div>
         <button
           onClick={downloadAllReport}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold text-sm transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 hover:bg-slate-200 text-foreground font-semibold text-sm transition-colors"
         >
           <Download className="w-4 h-4" />
           Export All Summary
@@ -153,9 +153,9 @@ export default function AnalyticsPage() {
           { label: 'Total Joins / Attendees', val: totalJoins, icon: Play, color: 'text-emerald-400' },
           { label: 'Avg Attendance Rate', val: `${averageAttendance}%`, icon: ArrowUpRight, color: 'text-amber-400' },
         ].map((item, idx) => (
-          <div key={idx} className="bg-[#0d0d14]/80 border border-white/[0.06] rounded-2xl p-4 space-y-2">
+          <div key={idx} className="bg-white shadow-sm border border-slate-200 rounded-2xl p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-white/40 font-medium">{item.label}</span>
+              <span className="text-xs text-muted-foreground font-medium">{item.label}</span>
               <item.icon className={`w-4 h-4 ${item.color}`} />
             </div>
             <p className="text-2xl font-bold">{item.val}</p>
@@ -164,14 +164,14 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Search Filter */}
-      <div className="flex items-center bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2 max-w-sm">
-        <Search className="w-4 h-4 text-white/30 mr-2" />
+      <div className="flex items-center bg-white shadow-sm border border-slate-200 rounded-xl px-3 py-2 max-w-sm">
+        <Search className="w-4 h-4 text-muted-foreground mr-2" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search webinar by title…"
-          className="bg-transparent border-none text-sm text-white placeholder-white/20 focus:outline-none w-full"
+          className="bg-transparent border-none text-sm text-foreground placeholder-muted-foreground focus:outline-none w-full"
         />
       </div>
 
@@ -181,39 +181,39 @@ export default function AnalyticsPage() {
           <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="border border-dashed border-white/10 rounded-2xl p-12 text-center bg-[#0d0d14]/40">
-          <h3 className="font-semibold text-white/80">No webinar reports available</h3>
-          <p className="text-white/30 text-xs mt-1">Webinars will show registration and audience tracking statistics once created.</p>
+        <div className="border border-dashed border-slate-200 rounded-2xl p-12 text-center bg-slate-50">
+          <h3 className="font-semibold text-foreground">No webinar reports available</h3>
+          <p className="text-muted-foreground text-xs mt-1">Webinars will show registration and audience tracking statistics once created.</p>
         </div>
       ) : (
-        <div className="border border-white/[0.06] rounded-2xl bg-[#0d0d14]/60 overflow-hidden">
+        <div className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                  <th className="p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">Webinar Session</th>
-                  <th className="p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">Mode</th>
-                  <th className="p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">Registrations</th>
-                  <th className="p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">Joins</th>
-                  <th className="p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">Attendance Rate</th>
-                  <th className="p-4 text-xs font-semibold text-white/40 uppercase tracking-wider">Actions</th>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Webinar Session</th>
+                  <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mode</th>
+                  <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Registrations</th>
+                  <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joins</th>
+                  <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Attendance Rate</th>
+                  <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04]">
+              <tbody className="divide-y divide-slate-200">
                 {filtered.map((w) => {
                   const rate = w.registeredCount > 0 ? Math.round((w.attendeeCount / w.registeredCount) * 100) : 0;
                   return (
-                    <tr key={w.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={w.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4">
                         <div>
-                          <p className="font-semibold text-sm text-white">{w.title}</p>
-                          <p className="text-white/30 text-xs flex items-center gap-1.5 mt-1">
+                          <p className="font-semibold text-sm text-foreground">{w.title}</p>
+                          <p className="text-muted-foreground text-xs flex items-center gap-1.5 mt-1">
                             <Calendar className="w-3 h-3" />
                             {w.scheduledAt ? new Date(w.scheduledAt).toLocaleString() : '—'}
                           </p>
                         </div>
                       </td>
-                      <td className="p-4 text-sm font-medium text-white/70 capitalize">
+                      <td className="p-4 text-sm font-medium text-foreground capitalize">
                         {w.mode === 'semi_live' ? '🎬 Semi-Live' : '📡 Fully Live'}
                       </td>
                       <td className="p-4 text-sm font-semibold text-indigo-400">
@@ -224,7 +224,7 @@ export default function AnalyticsPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${rate > 50 ? 'bg-emerald-500' : 'bg-amber-500'}`}
                               style={{ width: `${rate}%` }}
@@ -237,7 +237,7 @@ export default function AnalyticsPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setSelectedWebinar(w)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 border border-white/10 hover:bg-white/10 flex items-center gap-1 transition-colors"
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 border border-slate-200 hover:bg-slate-200 flex items-center gap-1 transition-colors"
                           >
                             Details
                             <ChevronRight className="w-3.5 h-3.5" />
@@ -266,25 +266,25 @@ export default function AnalyticsPage() {
         const attendees = (selectedWebinar.settings?.attendees as any[]) || [];
 
         return (
-          <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
-            <div className="bg-[#0d0d14] border border-white/10 rounded-2xl overflow-hidden max-w-3xl w-full shadow-2xl relative flex flex-col max-h-[85vh]">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden max-w-3xl w-full shadow-2xl relative flex flex-col max-h-[85vh]">
               {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-white/[0.08] flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                 <div>
-                  <h3 className="text-white font-bold text-lg">{selectedWebinar.title}</h3>
-                  <p className="text-white/40 text-xs mt-0.5">Session Attendee Report & Activity Log</p>
+                  <h3 className="text-foreground font-bold text-lg">{selectedWebinar.title}</h3>
+                  <p className="text-muted-foreground text-xs mt-0.5">Session Attendee Report & Activity Log</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => downloadWebinarReport(selectedWebinar)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-xs font-semibold transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1d6fe8] hover:bg-blue-600 text-white text-xs font-semibold transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                     CSV Report
                   </button>
                   <button
                     onClick={() => setSelectedWebinar(null)}
-                    className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors"
+                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -295,16 +295,16 @@ export default function AnalyticsPage() {
               <div className="p-6 overflow-y-auto space-y-6 flex-1">
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 text-center">
-                    <p className="text-[10px] text-white/40 uppercase font-semibold">Registrations</p>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Registrations</p>
                     <p className="text-xl font-bold text-indigo-400 mt-1">{registrants.length}</p>
                   </div>
-                  <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 text-center">
-                    <p className="text-[10px] text-white/40 uppercase font-semibold">Attended</p>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Attended</p>
                     <p className="text-xl font-bold text-emerald-400 mt-1">{attendees.length}</p>
                   </div>
-                  <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 text-center">
-                    <p className="text-[10px] text-white/40 uppercase font-semibold">Attendance Rate</p>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Attendance Rate</p>
                     <p className="text-xl font-bold text-violet-400 mt-1">
                       {registrants.length > 0 ? Math.round((attendees.length / registrants.length) * 100) : 0}%
                     </p>
@@ -313,10 +313,10 @@ export default function AnalyticsPage() {
 
                 {/* Attendee details list */}
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-sm border-b border-white/[0.05] pb-2">Registrant & Attendee Activity</h4>
+                  <h4 className="font-semibold text-sm border-b border-slate-200 pb-2">Registrant & Attendee Activity</h4>
 
                   {registrants.length === 0 && attendees.length === 0 ? (
-                    <div className="text-center py-10 text-white/30 text-xs">No registrations or joins recorded for this webinar.</div>
+                    <div className="text-center py-10 text-muted-foreground text-xs">No registrations or joins recorded for this webinar.</div>
                   ) : (
                     <div className="space-y-2">
                       {/* Combine unique users */}
@@ -327,18 +327,18 @@ export default function AnalyticsPage() {
                         return (
                           <div
                             key={reg.id}
-                            className="bg-[#08080f] border border-white/[0.05] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                            className="bg-white shadow-sm border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                           >
                             <div>
-                              <p className="font-semibold text-white text-sm">{reg.name}</p>
-                              <p className="text-white/40 flex items-center gap-1.5 mt-0.5">
+                              <p className="font-semibold text-foreground text-sm">{reg.name}</p>
+                              <p className="text-muted-foreground flex items-center gap-1.5 mt-0.5">
                                 <Mail className="w-3.5 h-3.5" />
                                 {reg.email}
                               </p>
                             </div>
                             <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 text-right">
                               <div>
-                                <p className="text-white/30 font-medium">Status</p>
+                                <p className="text-muted-foreground font-medium">Status</p>
                                 <span className={`inline-block px-2 py-0.5 rounded-lg border mt-0.5 font-bold ${
                                   att
                                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
@@ -349,7 +349,7 @@ export default function AnalyticsPage() {
                               </div>
                               {att && (
                                 <div>
-                                  <p className="text-white/30 font-medium">Watch Duration</p>
+                                  <p className="text-muted-foreground font-medium">Watch Duration</p>
                                   <p className="text-emerald-400 font-bold mt-0.5 flex items-center gap-1">
                                     <Clock className="w-3.5 h-3.5" />
                                     {fmtTime(att.durationSeconds || 0)}
@@ -371,24 +371,24 @@ export default function AnalyticsPage() {
                         return (
                           <div
                             key={att.id}
-                            className="bg-[#08080f] border border-white/[0.05] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                            className="bg-white shadow-sm border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                           >
                             <div>
-                              <p className="font-semibold text-white text-sm">{att.name}</p>
-                              <p className="text-white/40 flex items-center gap-1.5 mt-0.5">
+                              <p className="font-semibold text-foreground text-sm">{att.name}</p>
+                              <p className="text-muted-foreground flex items-center gap-1.5 mt-0.5">
                                 <Mail className="w-3.5 h-3.5" />
                                 {att.email || 'Guest attendee'}
                               </p>
                             </div>
                             <div className="flex items-center gap-4 text-right">
                               <div>
-                                <p className="text-white/30 font-medium">Status</p>
+                                <p className="text-muted-foreground font-medium">Status</p>
                                 <span className="inline-block px-2 py-0.5 rounded-lg border mt-0.5 font-bold bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
                                   Attended (Guest)
                                 </span>
                               </div>
                               <div>
-                                <p className="text-white/30 font-medium">Watch Duration</p>
+                                <p className="text-muted-foreground font-medium">Watch Duration</p>
                                 <p className="text-emerald-400 font-bold mt-0.5 flex items-center gap-1">
                                   <Clock className="w-3.5 h-3.5" />
                                   {fmtTime(att.durationSeconds || 0)}

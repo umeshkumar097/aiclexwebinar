@@ -82,19 +82,19 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6 text-white">
+    <div className="p-6 max-w-4xl mx-auto space-y-6 text-foreground">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
             {unreadCount > 0 && (
-              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-violet-600 text-white">
+              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-[#1d6fe8] text-white">
                 {unreadCount}
               </span>
             )}
           </div>
-          <p className="text-white/40 text-sm mt-1">Stay updated with registrations, recording status, and server alerts.</p>
+          <p className="text-muted-foreground text-sm mt-1">Stay updated with registrations, recording status, and server alerts.</p>
         </div>
 
         {unreadCount > 0 && (
@@ -102,7 +102,7 @@ export default function NotificationsPage() {
             id="mark-all-read"
             onClick={() => void markAllAsRead()}
             disabled={markingAll}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 border border-slate-200 text-foreground hover:text-foreground transition-all disabled:opacity-50"
           >
             {markingAll ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -116,53 +116,53 @@ export default function NotificationsPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="border border-white/[0.06] rounded-2xl bg-[#0d0d14]/60 overflow-hidden divide-y divide-white/[0.04]">
+        <div className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden divide-y divide-slate-200">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="p-4 flex gap-4 items-start animate-pulse">
-              <div className="w-9 h-9 rounded-xl bg-white/5 flex-shrink-0" />
+              <div className="w-9 h-9 rounded-xl bg-slate-100 flex-shrink-0" />
               <div className="flex-1 space-y-2">
-                <div className="h-3.5 w-48 rounded bg-white/5" />
-                <div className="h-2.5 w-full max-w-xs rounded bg-white/5" />
+                <div className="h-3.5 w-48 rounded bg-slate-100" />
+                <div className="h-2.5 w-full max-w-xs rounded bg-slate-100" />
               </div>
             </div>
           ))}
         </div>
       ) : notifications.length === 0 ? (
-        <div className="border border-dashed border-white/10 rounded-2xl p-16 text-center bg-[#0d0d14]/40">
-          <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Bell className="w-7 h-7 text-white/20" />
+        <div className="border border-dashed border-slate-200 rounded-2xl p-16 text-center bg-slate-50">
+          <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Bell className="w-7 h-7 text-muted-foreground" />
           </div>
-          <h3 className="font-semibold text-white/60 text-sm">No notifications yet</h3>
-          <p className="text-white/30 text-xs mt-1 max-w-xs mx-auto">
+          <h3 className="font-semibold text-foreground text-sm">No notifications yet</h3>
+          <p className="text-muted-foreground text-xs mt-1 max-w-xs mx-auto">
             You&apos;ll see registration alerts, recording updates, and system messages here.
           </p>
         </div>
       ) : (
-        <div className="border border-white/[0.06] rounded-2xl bg-[#0d0d14]/60 overflow-hidden divide-y divide-white/[0.04]">
+        <div className="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden divide-y divide-slate-200">
           {notifications.map((item) => {
             const { icon: Icon, color } = getTypeStyle(item.type);
             return (
               <button
                 key={item.id}
                 onClick={() => { if (!item.read) void markAsRead(item.id); }}
-                className={`w-full text-left p-4 flex gap-4 hover:bg-white/[0.02] transition-colors items-start ${!item.read ? 'bg-violet-500/[0.03]' : ''}`}
+                className={`w-full text-left p-4 flex gap-4 hover:bg-slate-50 transition-colors items-start ${!item.read ? 'bg-blue-50' : ''}`}
               >
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center border flex-shrink-0 ${color}`}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-sm text-white flex items-center gap-2">
+                    <p className="font-semibold text-sm text-foreground flex items-center gap-2">
                       {item.title}
                       {!item.read && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-violet-400 inline-block" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1d6fe8] inline-block" />
                       )}
                     </p>
-                    <span className="text-[10px] text-white/30 font-medium flex-shrink-0">
+                    <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">
                       {timeAgo(item.createdAt)}
                     </span>
                   </div>
-                  <p className="text-white/50 text-xs mt-1 leading-relaxed">{item.body}</p>
+                  <p className="text-muted-foreground text-xs mt-1 leading-relaxed">{item.body}</p>
                 </div>
               </button>
             );

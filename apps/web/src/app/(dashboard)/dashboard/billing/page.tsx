@@ -34,9 +34,9 @@ const PLANS: Plan[] = [
     price: '$0',
     period: '/month',
     icon: Zap,
-    iconColor: 'hsl(262 83% 67%)',
-    iconBg: 'hsl(262 83% 67% / 0.15)',
-    borderColor: 'hsl(262 83% 67% / 0.3)',
+    iconColor: '#1d6fe8',
+    iconBg: 'rgba(29, 111, 232, 0.1)',
+    borderColor: 'rgba(29, 111, 232, 0.2)',
     current: true,
     features: [
       '1 webinar / month',
@@ -53,9 +53,9 @@ const PLANS: Plan[] = [
     price: '$49',
     period: '/month',
     icon: Crown,
-    iconColor: 'hsl(38 92% 55%)',
-    iconBg: 'hsl(38 92% 55% / 0.15)',
-    borderColor: 'hsl(38 92% 55% / 0.4)',
+    iconColor: '#f4b413',
+    iconBg: 'rgba(244, 180, 19, 0.1)',
+    borderColor: 'rgba(244, 180, 19, 0.3)',
     badge: 'Most Popular',
     features: [
       '10 webinars / month',
@@ -74,9 +74,9 @@ const PLANS: Plan[] = [
     price: '$149',
     period: '/month',
     icon: Building2,
-    iconColor: 'hsl(217 91% 60%)',
-    iconBg: 'hsl(217 91% 60% / 0.15)',
-    borderColor: 'hsl(217 91% 60% / 0.4)',
+    iconColor: '#1d6fe8',
+    iconBg: 'rgba(29, 111, 232, 0.15)',
+    borderColor: 'rgba(29, 111, 232, 0.4)',
     features: [
       'Unlimited webinars',
       '2,000 attendees max',
@@ -113,7 +113,7 @@ export default function BillingPage(): React.ReactElement {
     <div className="p-6 lg:p-8 max-w-6xl mx-auto">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border backdrop-blur-md text-white text-sm font-medium shadow-xl bg-violet-500/15 border-violet-500/30 animate-in slide-in-from-top-2 duration-300">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border backdrop-blur-md text-foreground text-sm font-medium shadow-md bg-white border-slate-200 animate-in slide-in-from-top-2 duration-300">
           <span>🚀</span>
           <span>{toast}</span>
         </div>
@@ -141,13 +141,13 @@ export default function BillingPage(): React.ReactElement {
           <div
             className="glass-card p-5 flex items-center gap-4"
             style={{
-              background: 'linear-gradient(135deg, hsl(262 83% 67% / 0.08) 0%, hsl(217 91% 60% / 0.05) 100%)',
-              borderColor: 'hsl(262 83% 67% / 0.25)',
+              background: '#ffffff',
+              borderColor: 'rgba(29, 111, 232, 0.2)',
             }}
           >
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'hsl(262 83% 67% / 0.15)' }}
+              style={{ background: 'rgba(29, 111, 232, 0.1)' }}
             >
               <Zap className="w-6 h-6 text-primary" />
             </div>
@@ -179,7 +179,7 @@ export default function BillingPage(): React.ReactElement {
                 {plan.badge && (
                   <span
                     className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: 'hsl(38 92% 55% / 0.2)', color: 'hsl(38 92% 65%)' }}
+                    style={{ background: 'rgba(244, 180, 19, 0.15)', color: '#d97706' }}
                   >
                     {plan.badge}
                   </span>
@@ -216,7 +216,7 @@ export default function BillingPage(): React.ReactElement {
                 {plan.current ? (
                   <button
                     disabled
-                    className="w-full py-2.5 rounded-xl text-sm font-semibold text-muted-foreground bg-white/5 border border-white/10 cursor-default"
+                    className="w-full py-2.5 rounded-xl text-sm font-semibold text-muted-foreground bg-slate-50 border border-slate-200 cursor-default"
                   >
                     ✓ Current Plan
                   </button>
@@ -226,12 +226,12 @@ export default function BillingPage(): React.ReactElement {
                     onClick={() =>
                       showToast(`${plan.name} plan is Coming Soon! We'll notify you when it's available.`)
                     }
-                    className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                    className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all shadow-sm hover:opacity-90 active:scale-[0.98]"
                     style={{
                       background: `linear-gradient(135deg, ${plan.iconColor}, ${
                         plan.id === 'plan-pro'
-                          ? 'hsl(262 83% 67%)'
-                          : 'hsl(262 83% 67%)'
+                          ? '#3b82f6'
+                          : '#3b82f6'
                       })`,
                     }}
                   >
@@ -253,7 +253,7 @@ export default function BillingPage(): React.ReactElement {
             <div className="p-12 flex flex-col items-center justify-center text-center space-y-3">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: 'hsl(262 83% 67% / 0.08)' }}
+                style={{ background: 'rgba(29, 111, 232, 0.08)' }}
               >
                 <FileText className="w-7 h-7 text-muted-foreground" />
               </div>

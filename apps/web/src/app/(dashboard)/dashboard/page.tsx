@@ -28,8 +28,8 @@ const quickActions = [
     description: 'Launch a new semi-live webinar',
     icon: Video,
     href: '/dashboard/webinars/new',
-    color: 'hsl(262 83% 67%)',
-    bg: 'hsl(262 83% 67% / 0.1)',
+    color: '#1d6fe8',
+    bg: 'rgba(29, 111, 232, 0.1)',
   },
   {
     id: 'action-upload-recording',
@@ -37,8 +37,8 @@ const quickActions = [
     description: 'Add pre-recorded video content',
     icon: PlayCircle,
     href: '/dashboard/webinars/new?step=recording',
-    color: 'hsl(217 91% 60%)',
-    bg: 'hsl(217 91% 60% / 0.1)',
+    color: '#f4b413',
+    bg: 'rgba(244, 180, 19, 0.1)',
   },
   {
     id: 'action-view-analytics',
@@ -46,8 +46,8 @@ const quickActions = [
     description: 'See your performance metrics',
     icon: BarChart3,
     href: '/dashboard/analytics',
-    color: 'hsl(142 71% 45%)',
-    bg: 'hsl(142 71% 45% / 0.1)',
+    color: '#10b981',
+    bg: 'rgba(16, 185, 129, 0.1)',
   },
 ];
 
@@ -68,11 +68,11 @@ function StatSkeleton() {
   return (
     <div className="stat-card animate-pulse">
       <div className="flex items-center justify-between">
-        <div className="w-10 h-10 rounded-xl bg-white/5" />
+        <div className="w-10 h-10 rounded-xl bg-slate-100" />
       </div>
       <div className="mt-3 space-y-2">
-        <div className="h-7 w-16 rounded bg-white/5" />
-        <div className="h-3 w-28 rounded bg-white/5" />
+        <div className="h-7 w-16 rounded bg-slate-100" />
+        <div className="h-3 w-28 rounded bg-slate-100" />
       </div>
     </div>
   );
@@ -81,12 +81,12 @@ function StatSkeleton() {
 function WebinarRowSkeleton() {
   return (
     <div className="flex items-center gap-3 px-4 py-3 animate-pulse">
-      <div className="w-8 h-8 rounded-lg bg-white/5 flex-shrink-0" />
+      <div className="w-8 h-8 rounded-lg bg-slate-100 flex-shrink-0" />
       <div className="flex-1 space-y-1.5">
-        <div className="h-3.5 w-48 rounded bg-white/5" />
-        <div className="h-2.5 w-32 rounded bg-white/5" />
+        <div className="h-3.5 w-48 rounded bg-slate-100" />
+        <div className="h-2.5 w-32 rounded bg-slate-100" />
       </div>
-      <div className="h-5 w-16 rounded-full bg-white/5" />
+      <div className="h-5 w-16 rounded-full bg-slate-100" />
     </div>
   );
 }
@@ -95,7 +95,7 @@ const STATUS_STYLES: Record<string, { label: string; color: string; bg: string }
   live:      { label: 'Live',      color: 'hsl(0 84% 70%)',    bg: 'hsl(0 84% 70% / 0.12)' },
   scheduled: { label: 'Scheduled', color: 'hsl(38 92% 55%)',   bg: 'hsl(38 92% 55% / 0.12)' },
   draft:     { label: 'Draft',     color: 'hsl(0 0% 55%)',     bg: 'hsl(0 0% 55% / 0.12)' },
-  ended:     { label: 'Ended',     color: 'hsl(142 71% 45%)',  bg: 'hsl(142 71% 45% / 0.12)' },
+  ended:     { label: 'Ended',     color: '#10b981',  bg: 'hsl(142 71% 45% / 0.12)' },
   cancelled: { label: 'Cancelled', color: 'hsl(0 84% 60%)',    bg: 'hsl(0 84% 60% / 0.12)' },
 };
 
@@ -132,8 +132,8 @@ export default function DashboardPage(): React.ReactElement {
       value: statsLoading ? null : String(statsData?.total ?? 0),
       change: null,
       icon: Video,
-      color: 'hsl(262 83% 67%)',
-      bg: 'hsl(262 83% 67% / 0.1)',
+      color: '#1d6fe8',
+      bg: 'rgba(29, 111, 232, 0.1)',
     },
     {
       id: 'stat-live-now',
@@ -159,8 +159,8 @@ export default function DashboardPage(): React.ReactElement {
       value: statsLoading ? null : String(statsData?.draft ?? 0),
       change: null,
       icon: Eye,
-      color: 'hsl(142 71% 45%)',
-      bg: 'hsl(142 71% 45% / 0.1)',
+      color: '#10b981',
+      bg: 'rgba(16, 185, 129, 0.1)',
     },
   ];
 
@@ -188,7 +188,7 @@ export default function DashboardPage(): React.ReactElement {
             id="dashboard-create-webinar"
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white btn-glow flex-shrink-0 transition-all"
             style={{
-              background: 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))',
+              background: 'linear-gradient(135deg, #1d6fe8, #3b82f6)',
             }}
           >
             <Plus className="w-4 h-4" />
@@ -216,7 +216,7 @@ export default function DashboardPage(): React.ReactElement {
                   {stat.change !== null && (
                     <span
                       className="flex items-center gap-1 text-xs font-medium"
-                      style={{ color: 'hsl(142 71% 55%)' }}
+                      style={{ color: '#10b981' }}
                     >
                       <TrendingUp className="w-3 h-3" />
                       {stat.change}
@@ -278,7 +278,7 @@ export default function DashboardPage(): React.ReactElement {
 
             <div className="glass-card overflow-hidden">
               {webinarsLoading ? (
-                <div className="divide-y divide-border/30">
+                <div className="divide-y divide-slate-200">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <WebinarRowSkeleton key={i} />
                   ))}
@@ -287,7 +287,7 @@ export default function DashboardPage(): React.ReactElement {
                 <div className="p-12 flex flex-col items-center justify-center text-center space-y-4">
                   <div
                     className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                    style={{ background: 'hsl(262 83% 67% / 0.1)' }}
+                    style={{ background: 'rgba(29, 111, 232, 0.1)' }}
                   >
                     <Zap className="w-8 h-8 text-primary" />
                   </div>
@@ -302,7 +302,7 @@ export default function DashboardPage(): React.ReactElement {
                     id="empty-state-create-webinar"
                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white btn-glow mt-2"
                     style={{
-                      background: 'linear-gradient(135deg, hsl(262 83% 67%), hsl(217 91% 60%))',
+                      background: 'linear-gradient(135deg, #1d6fe8, #3b82f6)',
                     }}
                   >
                     <Plus className="w-4 h-4" />
@@ -310,7 +310,7 @@ export default function DashboardPage(): React.ReactElement {
                   </Link>
                 </div>
               ) : (
-                <div className="divide-y divide-border/30">
+                <div className="divide-y divide-slate-200">
                   {recentWebinars.map((w) => {
                     const st = STATUS_STYLES[w.status] ?? STATUS_STYLES.draft;
                     const scheduledLabel = w.scheduledAt
@@ -325,12 +325,12 @@ export default function DashboardPage(): React.ReactElement {
                       <Link
                         key={w.id}
                         href={`/dashboard/webinars/${w.id}`}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors group"
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors group"
                         style={{ textDecoration: 'none' }}
                       >
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ background: 'hsl(262 83% 67% / 0.1)' }}
+                          style={{ background: 'rgba(29, 111, 232, 0.1)' }}
                         >
                           <Video className="w-4 h-4 text-primary" />
                         </div>
@@ -363,15 +363,14 @@ export default function DashboardPage(): React.ReactElement {
           <div
             className="glass-card p-6"
             style={{
-              background:
-                'linear-gradient(135deg, hsl(262 83% 67% / 0.06) 0%, hsl(217 91% 60% / 0.04) 100%)',
-              borderColor: 'hsl(262 83% 67% / 0.2)',
+              background: '#ffffff',
+              borderColor: 'rgba(29, 111, 232, 0.2)',
             }}
           >
             <div className="flex items-start gap-4">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'hsl(262 83% 67% / 0.15)' }}
+                style={{ background: 'rgba(29, 111, 232, 0.1)' }}
               >
                 <Zap className="w-5 h-5 text-primary" />
               </div>
@@ -397,15 +396,15 @@ export default function DashboardPage(): React.ReactElement {
                         'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm',
                         step.done ? 'opacity-60' : '',
                       )}
-                      style={{ background: 'rgba(255,255,255,0.03)' }}
+                      style={{ background: 'rgba(0,0,0,0.02)' }}
                     >
                       <div
                         className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{
                           background: step.done
-                            ? 'hsl(142 71% 45% / 0.2)'
-                            : 'hsl(0 0% 20%)',
-                          border: `1px solid ${step.done ? 'hsl(142 71% 45% / 0.5)' : 'hsl(0 0% 30%)'}`,
+                            ? 'rgba(16, 185, 129, 0.2)'
+                            : 'rgba(0,0,0,0.05)',
+                          border: `1px solid ${step.done ? 'rgba(16, 185, 129, 0.5)' : 'rgba(0,0,0,0.1)'}`,
                         }}
                       >
                         {step.done && (
