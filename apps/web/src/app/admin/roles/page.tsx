@@ -13,7 +13,7 @@ type Role = {
   id: string;
   name: string;
   description?: string;
-  permissions: Permission[];
+  rolePermissions?: { permissionId: string; permission: Permission }[];
 };
 
 export default function RolesPage() {
@@ -36,7 +36,9 @@ export default function RolesPage() {
         setRoles(rolesList);
         setAllPermissions(permsList);
         const init: Record<string, Set<string>> = {};
-        rolesList.forEach((r) => { init[r.id] = new Set(r.permissions.map((p) => p.id)); });
+        rolesList.forEach((r) => {
+          init[r.id] = new Set(r.rolePermissions?.map((rp) => rp.permissionId) || []);
+        });
         setSelected(init);
       })
       .catch((e: Error) => setError(e.message))
