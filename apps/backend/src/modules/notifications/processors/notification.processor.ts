@@ -73,13 +73,12 @@ export class NotificationProcessor extends WorkerHost {
     templateKey: string,
     variables: Record<string, string>,
   ): Promise<void> {
-    const smtpHost = this.configService.get('email.smtpHost' as never, { infer: true }) as string | undefined;
-    const smtpPort = this.configService.get('email.smtpPort' as never, { infer: true }) as number | undefined;
-    const smtpUser = this.configService.get('email.smtpUser' as never, { infer: true }) as string | undefined;
-    const smtpPassword = this.configService.get('email.smtpPassword' as never, { infer: true }) as string | undefined;
-    const smtpSecure = this.configService.get('email.smtpSecure' as never, { infer: true }) as boolean | undefined;
-    let fromEmail = this.configService.get('email.fromEmail', { infer: true }) as string;
-    let fromName = this.configService.get('email.fromName', { infer: true }) as string;
+    const { Resend } = await import('resend');
+    const apiKey = this.configService.get('email.apiKey', { infer: true });
+    const resend = new Resend(apiKey);
+
+    let fromEmail = 'info@zonvo.in';
+    let fromName = 'Aiclex Webinar';
 
     if (templateKey.startsWith('auth.')) {
       fromEmail = 'security@zonvo.in';
@@ -96,43 +95,12 @@ export class NotificationProcessor extends WorkerHost {
     } else if (templateKey.startsWith('member.')) {
       fromEmail = 'team@zonvo.in';
       fromName = 'Aiclex Team';
-    } else {
-      fromEmail = 'info@zonvo.in';
-      fromName = 'Aiclex Webinar';
+    } else if (templateKey.startsWith('admin.')) {
+      fromEmail = 'admin@zonvo.in';
+      fromName = 'Aiclex Admin';
     }
 
     const { subject, html } = this.renderEmailTemplate(templateKey, variables);
-
-    // Use SMTP if configured
-    if (smtpHost && smtpUser && smtpPassword) {
-      try {
-        // Dynamic import so Docker build succeeds even if nodemailer not pre-installed
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const nodemailer = require('nodemailer') as typeof import('nodemailer');
-        const transporter = nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort ?? 465,
-          secure: smtpSecure !== false,
-          auth: { user: smtpUser, pass: smtpPassword },
-          tls: { rejectUnauthorized: false },
-        });
-        await transporter.sendMail({
-          from: `"${fromName}" <${fromEmail}>`,
-          to,
-          subject,
-          html,
-        });
-        this.logger.log(`SMTP email sent to ${to}: ${templateKey}`);
-        return;
-      } catch (smtpErr) {
-        this.logger.warn(`SMTP failed, falling back to Resend: ${(smtpErr as Error).message}`);
-      }
-    }
-
-    // Fallback to Resend if no SMTP configured
-    const { Resend } = await import('resend');
-    const apiKey = this.configService.get('email.apiKey', { infer: true });
-    const resend = new Resend(apiKey);
 
     const { error } = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
@@ -390,6 +358,69 @@ ${btn('🔗 Open Joining Link', v['joinLink'] ?? '#', '#f59e0b')}
   <a href="${v['joinLink'] ?? '#'}" style="background:#dc2626;color:#fff;padding:16px 48px;border-radius:12px;text-decoration:none;font-weight:800;font-size:17px;display:inline-block;">🔴 Watch Live Now</a>
 </div>
 `, `${v['webinarTitle']} is live now — click to join!`),
+      },
+
+      'admin.user_invited': {
+        subject: `🎉 You have been invited to Zonvo`,
+        html: wrap(`
+<h1 style="color:#fff;font-size:24px;font-weight:700;margin:0 0 10px;">You're invited to Zonvo! 🎊</h1>
+<p style="color:#a1a1aa;font-size:15px;line-height:1.7;margin:0 0 22px;">
+  Hi <strong style="color:#fff;">${v['firstName'] ?? 'there'}</strong>, you've been invited to join Aiclex Webinar as a
+  <span style="background:#2d1560;color:#c4b5fd;padding:2px 10px;border-radius:6px;font-size:13px;font-weight:600;">${v['role'] ?? 'host'}</span>.
+</p>
+<div style="background:linear-gradient(135deg,#1e0a3c,#18181b);border:1px solid #6d28d9;border-radius:14px;padding:20px 24px;margin-bottom:22px;">
+  <p style="color:#c4b5fd;font-size:13px;font-weight:600;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.08em;">What you can do as a host:</p>
+  ${step('1', 'Create and run webinars with up to hundreds of attendees')}
+  ${step('2', 'Schedule recurring or one-time events')}
+  ${step('3', 'Share registration links and track signups')}
+  ${step('4', 'Record sessions and share replays')}
+</div>
+${btn('✅ Accept Invitation', v['inviteLink'] ?? '#', '#7c3aed')}
+${divider}
+<p style="color:#52525b;font-size:12px;text-align:center;">This invitation expires in <strong style="color:#a1a1aa;">${v['expiresIn'] ?? '7 days'}</strong>. If you did not expect this, you can safely ignore it.</p>
+`, `You've been invited to join Aiclex Webinar as a ${v['role'] ?? 'host'}`),
+      },
+
+      'admin.license_assigned': {
+        subject: `✅ Webinar License Assigned — You can now host webinars!`,
+        html: wrap(`
+<div style="text-align:center;margin-bottom:24px;">
+  <div style="font-size:52px;margin-bottom:12px;">🎫</div>
+  <h1 style="color:#fff;font-size:24px;font-weight:700;margin:0 0 6px;">License Activated, ${v['firstName'] ?? 'there'}!</h1>
+  <p style="color:#a1a1aa;font-size:15px;margin:0;">Your <strong style="color:#c4b5fd;">${v['licenseName'] ?? 'Webinar'}</strong> license is now active.</p>
+</div>
+<div style="background:#0f2818;border:1px solid #16a34a;border-radius:14px;padding:20px 24px;margin-bottom:22px;">
+  <p style="color:#86efac;font-size:14px;font-weight:600;margin:0 0 12px;">🚀 Your license includes:</p>
+  ${v['maxWebinars'] ? step('📅', `Up to <strong style="color:#fff;">${v['maxWebinars']}</strong> webinars`) : ''}
+  ${v['maxAttendees'] ? step('👥', `Up to <strong style="color:#fff;">${v['maxAttendees']}</strong> attendees per webinar`) : ''}
+  ${step('🎬', 'Recording & replay support')}
+  ${step('📊', 'Analytics & attendee tracking')}
+</div>
+${btn('🏠 Go to Dashboard', 'https://webinar.zonvo.tech/dashboard', '#059669')}
+`, `Your ${v['licenseName'] ?? 'webinar'} license is now active — start hosting!`),
+      },
+
+      'admin.license_removed': {
+        subject: `ℹ️ Webinar License Removed`,
+        html: wrap(`
+<div style="text-align:center;margin-bottom:22px;">
+  <div style="font-size:48px;margin-bottom:12px;">📋</div>
+  <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 6px;">License Update</h1>
+  <p style="color:#a1a1aa;font-size:15px;margin:0;">Hi <strong style="color:#fff;">${v['firstName'] ?? 'there'}</strong></p>
+</div>
+<div style="background:#1c0a0a;border:1px solid #7f1d1d;border-radius:12px;padding:16px 20px;margin-bottom:22px;">
+  <p style="color:#fca5a5;font-size:14px;margin:0;">
+    Your <strong style="color:#fff;">${v['licenseName'] ?? 'webinar'}</strong> license has been removed from your account.
+    You will no longer be able to create new webinars until a new license is assigned.
+  </p>
+</div>
+<p style="color:#a1a1aa;font-size:14px;line-height:1.7;text-align:center;">
+  If you believe this is a mistake, please contact your administrator or reach out to
+  <a href="mailto:support@zonvo.in" style="color:#8b5cf6;text-decoration:none;">support@zonvo.in</a>.
+</p>
+${divider}
+<p style="color:#52525b;font-size:12px;text-align:center;">Your existing webinar data and history remain safe.</p>
+`, `Your ${v['licenseName'] ?? 'webinar'} license has been removed`),
       },
     };
 

@@ -1,168 +1,375 @@
 'use client';
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { adminApi } from '@/lib/adminApi';
 
-const STATUS_OPTS = ['', 'active', 'pending', 'suspended', 'deleted'];
+type User = {
+  id: string;
+  name?: string;
+  email: string;
+  status: string;
+  phone?: string;
+  createdAt: string;
+  license?: { name: string } | null;
+};
 
-const STATUS_COLOR: Record<string, string> = {
-  active: 'bg-emerald-400/15 text-emerald-400 border-emerald-400/25',
-  pending: 'bg-amber-400/15 text-amber-400 border-amber-400/25',
-  suspended: 'bg-red-400/15 text-red-400 border-red-400/25',
-  deleted: 'bg-slate-400/15 text-slate-400 border-slate-400/25',
+type License = {
+  id: string;
+  name: string;
 };
 
 function Badge({ status }: { status: string }) {
-  const cls = STATUS_COLOR[status] ?? 'bg-slate-400/10 text-slate-400';
+  const map: Record<string, { bg: string; text: string }> = {
+    active:    { bg: 'rgba(16,185,129,0.15)',  text: '#34d399' },
+    pending:   { bg: 'rgba(245,158,11,0.15)',  text: '#fbbf24' },
+    suspended: { bg: 'rgba(239,68,68,0.12)',   text: '#f87171' },
+    deleted:   { bg: 'rgba(100,116,139,0.15)', text: '#94a3b8' },
+  };
+  const s = map[status] ?? { bg: 'rgba(100,116,139,0.1)', text: '#94a3b8' };
   return (
-    <span className={`inline-flex px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase ${cls}`}>
+    <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase" style={{ background: s.bg, color: s.text }}>
       {status}
     </span>
   );
 }
 
-export default function AdminUsersPage() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [total, setTotal] = useState(0);
+function LicenseBadge({ hasLicense }: { hasLicense: boolean }) {
+  return hasLicense ? (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}>
+      🟢 Licensed
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(37,99,235,0.15)', color: '#60a5fa' }}>
+      🔵 Basic
+    </span>
+  );
+}
+
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl p-6 z-10" style={{ background: '#0f1019', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-white font-bold text-base">{title}</h3>
+          <button onClick={onClose} className="text-white/40 hover:text-white/70 text-xl leading-none">&times;</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const TABS = ['All', 'Active', 'Suspended', 'Deleted'];
+const LICENSE_FILTERS = ['All', 'Licensed', 'Basic'];
+
+export default function UsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [licenses, setLicenses] = useState<License[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [tab, setTab] = useState('All');
+  const [licenseFilter, setLicenseFilter] = useState('All');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const limit = 20;
+  const [total, setTotal] = useState(0);
+  const [showInvite, setShowInvite] = useState(false);
+  const [showAssign, setShowAssign] = useState<{ userId: string; userName: string } | null>(null);
+  const [inviteForm, setInviteForm] = useState({ email: '', firstName: '', lastName: '', role: 'viewer' });
+  const [selectedLicenseId, setSelectedLicenseId] = useState('');
+  const [actionLoading, setActionLoading] = useState('');
 
-  const fetchUsers = useCallback(async () => {
+  const LIMIT = 20;
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => { setPage(1); }, [tab, licenseFilter, debouncedSearch]);
+
+  const fetchUsers = () => {
     setLoading(true);
-    try {
-      const res = await adminApi.users.list({ page, limit, search: search || undefined, status: statusFilter || undefined });
-      setUsers(res.users ?? []);
-      setTotal(res.total ?? 0);
-    } catch { setUsers([]); }
-    finally { setLoading(false); }
-  }, [page, search, statusFilter]);
-
-  useEffect(() => { void fetchUsers(); }, [fetchUsers]);
-
-  const openUser = async (id: string) => {
-    setDetailLoading(true);
-    setSelectedUser(null);
-    try {
-      const u = await adminApi.users.get(id);
-      setSelectedUser(u);
-    } catch { } finally { setDetailLoading(false); }
+    const statusMap: Record<string, string> = { Active: 'active', Suspended: 'suspended', Deleted: 'deleted' };
+    const licMap: Record<string, string> = { Licensed: 'licensed', Basic: 'basic' };
+    adminApi.users
+      .list({
+        page,
+        limit: LIMIT,
+        search: debouncedSearch || undefined,
+        status: statusMap[tab] || undefined,
+        license: licMap[licenseFilter] || undefined,
+      })
+      .then((d: { users?: User[]; total?: number } | User[]) => {
+        if (Array.isArray(d)) {
+          setUsers(d);
+          setTotal(d.length);
+        } else {
+          setUsers((d as { users?: User[]; total?: number }).users ?? []);
+          setTotal((d as { users?: User[]; total?: number }).total ?? 0);
+        }
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
   };
 
-  const changeStatus = async (id: string, status: string) => {
-    setActionLoading(id + status);
+  useEffect(fetchUsers, [page, debouncedSearch, tab, licenseFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    adminApi.licenses.list().then((d: License[] | { licenses?: License[] }) => {
+      setLicenses(Array.isArray(d) ? d : (d as { licenses?: License[] }).licenses ?? []);
+    }).catch(() => {});
+  }, []);
+
+  const handleStatusChange = async (userId: string, newStatus: string) => {
+    setActionLoading(userId + '_status');
     try {
-      await adminApi.users.updateStatus(id, status);
-      void fetchUsers();
-      if (selectedUser?.id === id) {
-        setSelectedUser((u: any) => u ? { ...u, status } : u);
-      }
-    } catch { } finally { setActionLoading(null); }
+      await adminApi.users.updateStatus(userId, newStatus);
+      setSuccess(`User ${newStatus} successfully`);
+      fetchUsers();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setActionLoading('');
+    }
   };
 
-  const deleteUser = async (id: string) => {
-    if (!confirm('Permanently delete this user? This cannot be undone.')) return;
-    setActionLoading(id + 'delete');
+  const handleDelete = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
+    setActionLoading(userId + '_delete');
     try {
-      await adminApi.users.delete(id);
-      setSelectedUser(null);
-      void fetchUsers();
-    } catch { } finally { setActionLoading(null); }
+      await adminApi.users.delete(userId);
+      setSuccess('User deleted successfully');
+      fetchUsers();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setActionLoading('');
+    }
   };
 
-  const totalPages = Math.ceil(total / limit);
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionLoading('invite');
+    try {
+      await adminApi.invitations.create(inviteForm);
+      setSuccess('Invitation sent successfully');
+      setShowInvite(false);
+      setInviteForm({ email: '', firstName: '', lastName: '', role: 'viewer' });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleAssignLicense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showAssign || !selectedLicenseId) return;
+    setActionLoading('assign');
+    try {
+      await adminApi.licenses.assign(showAssign.userId, selectedLicenseId);
+      setSuccess('License assigned successfully');
+      setShowAssign(null);
+      setSelectedLicenseId('');
+      fetchUsers();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const totalPages = Math.ceil(total / LIMIT);
+
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: 'white',
+    borderRadius: '10px',
+    padding: '8px 12px',
+    fontSize: '13px',
+    width: '100%',
+    outline: 'none',
+  };
 
   return (
     <div className="space-y-5 max-w-7xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-white font-bold text-2xl">Users</h1>
-          <p className="text-white/40 text-sm mt-0.5">{total} total users</p>
+      {/* Alert */}
+      {error && (
+        <div className="flex items-center justify-between px-4 py-3 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+          <span>{error}</span>
+          <button onClick={() => setError('')} className="ml-4 hover:opacity-70">&times;</button>
         </div>
+      )}
+      {success && (
+        <div className="flex items-center justify-between px-4 py-3 rounded-xl text-sm" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
+          <span>{success}</span>
+          <button onClick={() => setSuccess('')} className="ml-4 hover:opacity-70">&times;</button>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-white font-black text-2xl">Users</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{total.toLocaleString()} total users</p>
+        </div>
+        <button
+          onClick={() => setShowInvite(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+          style={{ background: 'linear-gradient(135deg,#1d6fe8,#4338ca)' }}
+        >
+          + Invite User
+        </button>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 flex-1 max-w-sm">
-          <span className="text-white/30 text-sm">🔍</span>
-          <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by name or email…"
-            className="bg-transparent text-white text-sm placeholder-white/25 focus:outline-none flex-1" />
-          {search && <button onClick={() => { setSearch(''); setPage(1); }} className="text-white/30 hover:text-white text-xs">✕</button>}
-        </div>
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none appearance-none cursor-pointer">
-          {STATUS_OPTS.map((s) => (
-            <option key={s} value={s} className="bg-slate-900">{s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All Status'}</option>
+        {/* Tabs */}
+        <div className="flex rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          {TABS.map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className="px-4 py-2 text-xs font-semibold transition-all"
+              style={tab === t
+                ? { background: '#1d6fe8', color: 'white' }
+                : { color: 'rgba(255,255,255,0.4)' }}
+            >
+              {t}
+            </button>
           ))}
-        </select>
+        </div>
+
+        {/* License filter */}
+        <div className="flex rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          {LICENSE_FILTERS.map((f) => (
+            <button
+              key={f}
+              onClick={() => setLicenseFilter(f)}
+              className="px-4 py-2 text-xs font-semibold transition-all"
+              style={licenseFilter === f
+                ? { background: 'rgba(29,111,232,0.4)', color: '#60a5fa' }
+                : { color: 'rgba(255,255,255,0.4)' }}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ ...inputStyle, padding: '8px 14px' }}
+          />
+        </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white/5 border border-white/8 rounded-2xl overflow-hidden">
+      <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(15,16,26,0.9)', border: '1px solid rgba(255,255,255,0.06)' }}>
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[#1d6fe8] border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center justify-center h-48">
+            <div className="w-8 h-8 rounded-full border-2 animate-spin" style={{ borderColor: '#1d6fe8', borderTopColor: 'transparent' }} />
           </div>
         ) : users.length === 0 ? (
-          <div className="py-20 text-center text-white/30 text-sm">No users found</div>
+          <div className="flex flex-col items-center justify-center h-48 gap-3" style={{ color: 'rgba(255,255,255,0.2)' }}>
+            <span className="text-4xl">👥</span>
+            <p className="text-sm">No users found</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full">
               <thead>
-                <tr className="border-b border-white/8">
-                  {['User', 'Email', 'Status', 'Verified', 'Joined', 'Actions'].map((h) => (
-                    <th key={h} className="px-5 py-3 text-[10px] font-semibold text-white/30 uppercase tracking-wider">{h}</th>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  {['User', 'Status', 'License', 'Phone', 'Joined', 'Actions'].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody>
                 {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-white/3 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                          style={{ background: 'linear-gradient(135deg, #1d6fe8, #7c3aed)' }}>
+                  <tr
+                    key={u.id}
+                    className="transition-colors hover:bg-white/[0.02]"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                          style={{ background: 'linear-gradient(135deg,#1d6fe8,#7c3aed)' }}
+                        >
                           {(u.name || u.email).charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-white text-sm font-medium">{u.name || '—'}</span>
+                        <div>
+                          <p className="text-sm font-medium text-white">{u.name || '—'}</p>
+                          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{u.email}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-white/60 text-sm">{u.email}</td>
-                    <td className="px-5 py-3.5"><Badge status={u.status} /></td>
-                    <td className="px-5 py-3.5">
-                      <span className={`text-xs font-semibold ${u.emailVerified ? 'text-emerald-400' : 'text-amber-400'}`}>
-                        {u.emailVerified ? '✓ Yes' : '✕ No'}
+                    <td className="px-4 py-3"><Badge status={u.status} /></td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <LicenseBadge hasLicense={!!u.license} />
+                        {u.license && <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{u.license.name}</span>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{u.phone || '—'}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                        {new Date(u.createdAt).toLocaleDateString()}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-white/40 text-xs">
-                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN') : '—'}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => void openUser(u.id)}
-                          className="px-2.5 py-1 rounded-lg bg-[#1d6fe8]/15 text-[#1d6fe8] text-xs font-medium hover:bg-[#1d6fe8]/25 transition-colors border border-[#1d6fe8]/25">
-                          Details
-                        </button>
-                        {u.status === 'active' ? (
-                          <button onClick={() => void changeStatus(u.id, 'suspended')}
-                            disabled={actionLoading === u.id + 'suspended'}
-                            className="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-colors border border-red-500/20 disabled:opacity-50">
-                            Suspend
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        {!u.license && (
+                          <button
+                            onClick={() => setShowAssign({ userId: u.id, userName: u.name || u.email })}
+                            className="px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors hover:opacity-80"
+                            style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}
+                          >
+                            Assign
                           </button>
-                        ) : u.status === 'suspended' ? (
-                          <button onClick={() => void changeStatus(u.id, 'active')}
-                            disabled={actionLoading === u.id + 'active'}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors border border-emerald-500/20 disabled:opacity-50">
+                        )}
+                        {u.status === 'suspended' ? (
+                          <button
+                            onClick={() => handleStatusChange(u.id, 'active')}
+                            disabled={actionLoading === u.id + '_status'}
+                            className="px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors hover:opacity-80"
+                            style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}
+                          >
                             Activate
                           </button>
+                        ) : u.status === 'active' ? (
+                          <button
+                            onClick={() => handleStatusChange(u.id, 'suspended')}
+                            disabled={actionLoading === u.id + '_status'}
+                            className="px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors hover:opacity-80"
+                            style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24' }}
+                          >
+                            Suspend
+                          </button>
                         ) : null}
+                        {u.status !== 'deleted' && (
+                          <button
+                            onClick={() => handleDelete(u.id)}
+                            disabled={actionLoading === u.id + '_delete'}
+                            className="px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors hover:opacity-80"
+                            style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171' }}
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -174,110 +381,140 @@ export default function AdminUsersPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-5 py-3 border-t border-white/8 flex items-center justify-between">
-            <p className="text-white/30 text-xs">Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}</p>
+          <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              Page {page} of {totalPages}
+            </span>
             <div className="flex gap-2">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-                className="px-3 py-1 rounded-lg bg-white/5 text-white/50 text-xs disabled:opacity-30 hover:bg-white/10 transition-colors">← Prev</button>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
-                className="px-3 py-1 rounded-lg bg-white/5 text-white/50 text-xs disabled:opacity-30 hover:bg-white/10 transition-colors">Next →</button>
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30 transition-colors hover:bg-white/5"
+                style={{ color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                ← Prev
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30 transition-colors hover:bg-white/5"
+                style={{ color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                Next →
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* User detail panel */}
-      {(selectedUser || detailLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end p-4 bg-black/60 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setSelectedUser(null); }}>
-          <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-white/8 flex items-center justify-between">
-              <h3 className="text-white font-semibold">User Details</h3>
-              <button onClick={() => setSelectedUser(null)} className="text-white/30 hover:text-white transition-colors text-xl">✕</button>
+      {/* Invite Modal */}
+      {showInvite && (
+        <Modal title="Invite User" onClose={() => setShowInvite(false)}>
+          <form onSubmit={handleInvite} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Email *</label>
+              <input
+                type="email"
+                required
+                value={inviteForm.email}
+                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                placeholder="user@example.com"
+                style={inputStyle}
+              />
             </div>
-
-            {detailLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="w-8 h-8 border-2 border-[#1d6fe8] border-t-transparent rounded-full animate-spin" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>First Name</label>
+                <input
+                  type="text"
+                  value={inviteForm.firstName}
+                  onChange={(e) => setInviteForm({ ...inviteForm, firstName: e.target.value })}
+                  placeholder="John"
+                  style={inputStyle}
+                />
               </div>
-            ) : selectedUser && (
-              <div className="overflow-y-auto flex-1 p-6 space-y-5">
-                {/* Avatar + basic */}
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg, #1d6fe8, #7c3aed)' }}>
-                    {(selectedUser.name || selectedUser.email).charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-white font-bold text-lg">{selectedUser.name || '—'}</p>
-                    <p className="text-white/40 text-sm">{selectedUser.email}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge status={selectedUser.status} />
-                      {selectedUser.emailVerified
-                        ? <span className="text-emerald-400 text-xs">✓ Email verified</span>
-                        : <span className="text-amber-400 text-xs">⚠ Not verified</span>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Meta */}
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'Phone', val: selectedUser.phone ?? '—' },
-                    { label: 'Timezone', val: selectedUser.timezone ?? '—' },
-                    { label: 'Webinars Hosted', val: selectedUser.webinarCount ?? 0 },
-                    { label: 'Joined', val: selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString('en-IN') : '—' },
-                  ].map((item) => (
-                    <div key={item.label} className="bg-white/5 rounded-xl p-3">
-                      <p className="text-white/30 text-[10px] uppercase tracking-wider">{item.label}</p>
-                      <p className="text-white font-semibold text-sm mt-0.5">{String(item.val)}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Their webinars */}
-                {selectedUser.webinars?.length > 0 && (
-                  <div>
-                    <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Recent Webinars</p>
-                    <div className="space-y-1.5">
-                      {selectedUser.webinars.slice(0, 5).map((w: any) => (
-                        <div key={w.id} className="bg-white/5 rounded-xl px-3 py-2 flex items-center justify-between">
-                          <p className="text-white text-xs font-medium truncate flex-1 pr-2">{w.title}</p>
-                          <Badge status={w.status} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="space-y-2 pt-2 border-t border-white/8">
-                  <p className="text-white/30 text-xs uppercase tracking-wider">Actions</p>
-                  <div className="flex gap-2">
-                    {selectedUser.status === 'active' ? (
-                      <button onClick={() => void changeStatus(selectedUser.id, 'suspended')}
-                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors">
-                        🔒 Suspend User
-                      </button>
-                    ) : selectedUser.status === 'suspended' ? (
-                      <button onClick={() => void changeStatus(selectedUser.id, 'active')}
-                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
-                        ✅ Activate User
-                      </button>
-                    ) : null}
-                    {selectedUser.status !== 'deleted' && (
-                      <button onClick={() => void deleteUser(selectedUser.id)}
-                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors">
-                        🗑 Delete User
-                      </button>
-                    )}
-                  </div>
-                </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Last Name</label>
+                <input
+                  type="text"
+                  value={inviteForm.lastName}
+                  onChange={(e) => setInviteForm({ ...inviteForm, lastName: e.target.value })}
+                  placeholder="Doe"
+                  style={inputStyle}
+                />
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Role</label>
+              <select
+                value={inviteForm.role}
+                onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
+                style={{ ...inputStyle, appearance: 'none' }}
+              >
+                <option value="viewer">Viewer</option>
+                <option value="host">Host</option>
+              </select>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowInvite(false)}
+                className="flex-1 py-2 rounded-xl text-sm font-semibold transition-colors hover:bg-white/5"
+                style={{ color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={actionLoading === 'invite'}
+                className="flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#1d6fe8,#4338ca)' }}
+              >
+                {actionLoading === 'invite' ? 'Sending…' : 'Send Invite'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Assign License Modal */}
+      {showAssign && (
+        <Modal title={`Assign License to ${showAssign.userName}`} onClose={() => setShowAssign(null)}>
+          <form onSubmit={handleAssignLicense} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Select License *</label>
+              <select
+                required
+                value={selectedLicenseId}
+                onChange={(e) => setSelectedLicenseId(e.target.value)}
+                style={{ ...inputStyle, appearance: 'none' }}
+              >
+                <option value="">Choose a license…</option>
+                {licenses.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAssign(null)}
+                className="flex-1 py-2 rounded-xl text-sm font-semibold transition-colors hover:bg-white/5"
+                style={{ color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={actionLoading === 'assign' || !selectedLicenseId}
+                className="flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}
+              >
+                {actionLoading === 'assign' ? 'Assigning…' : 'Assign License'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );
