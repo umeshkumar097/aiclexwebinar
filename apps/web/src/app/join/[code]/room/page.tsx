@@ -89,6 +89,8 @@ export default function AttendeeRoomPage({
   const [controlsVisible, setControls]    = useState(true);
   const [fullscreen, setFullscreen]       = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [sessionEnded, setSessionEnded]   = useState(false);
+
 
   // ── Features state ────────────────────────────────────────────────────────
   const [messages, setMessages]   = useState<ChatMsg[]>([]);
@@ -190,8 +192,14 @@ export default function AttendeeRoomPage({
     });
 
     room.on(RoomEvent.Disconnected, () => {
-      if (!cancelled) setConnState('disconnected');
+      if (!cancelled) {
+        // Check if room was closed by host (not by local leave)
+        // When host ends session, LiveKit disconnects everyone
+        setConnState('disconnected');
+        setSessionEnded(true);
+      }
     });
+
 
     room.on(RoomEvent.ConnectionQualityChanged, (quality, participant) => {
       if (!participant || participant === room.localParticipant) setNetQuality(quality);
@@ -395,6 +403,36 @@ export default function AttendeeRoomPage({
       if (annTimerRef.current) clearTimeout(annTimerRef.current);
     };
   }, []);
+
+  // ── Session ended overlay (host ended the webinar) ───────────────────────
+  if (sessionEnded) {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center"
+        style={{ background: 'linear-gradient(160deg, #0a0a14 0%, #08080f 100%)' }}>
+        <div className="flex flex-col items-center gap-5 px-6 text-center max-w-sm w-full">
+          <div className="w-24 h-24 rounded-full flex items-center justify-center font-bold text-white text-3xl shadow-2xl"
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #2563eb)', boxShadow: '0 0 60px rgba(29,111,232,0.4)' }}>
+            {webinarTitle.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="text-white/50 text-xs uppercase tracking-widest mb-1">Presented by</p>
+            <h2 className="text-white font-bold text-2xl mb-1">{webinarTitle}</h2>
+            <p className="text-white/60 text-sm">The session has ended. Thank you for attending!</p>
+          </div>
+          <div className="w-full h-px bg-white/10" />
+          <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-center w-full">
+            <p className="text-white/40 text-xs mb-1">Session duration</p>
+            <p className="text-white font-bold font-mono text-2xl">{fmt(elapsed)}</p>
+          </div>
+          <a href={`/join/${code}`}
+            className="w-full py-3.5 rounded-2xl text-sm font-bold text-white text-center transition-all hover:scale-[1.02]"
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #2563eb)', boxShadow: '0 8px 30px rgba(29,111,232,0.4)' }}>
+            ← Back to Session Page
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   // ── Error screen ──────────────────────────────────────────────────────────
   if (!token || connState === 'error') {

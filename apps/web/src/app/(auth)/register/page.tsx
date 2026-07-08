@@ -45,6 +45,10 @@ export default function RegisterPage(): React.ReactElement {
   const [showConfirm, setShowConfirm] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendDone, setResendDone] = useState(false);
   const [passwordValue, setPasswordValue] = useState('');
 
   const {
@@ -68,7 +72,13 @@ export default function RegisterPage(): React.ReactElement {
         firstName: data.firstName,
         lastName: data.lastName,
       });
+      setRegisteredEmail(data.email);
       setSuccess(true);
+      // Start 60s resend cooldown
+      setResendCooldown(60);
+      const tick = setInterval(() => {
+        setResendCooldown((c) => { if (c <= 1) { clearInterval(tick); return 0; } return c - 1; });
+      }, 1000);
     } catch (err) {
       if (err instanceof ApiError) {
         setServerError(err.message);
@@ -78,34 +88,94 @@ export default function RegisterPage(): React.ReactElement {
     }
   };
 
+  const handleResend = async () => {
+    if (resendCooldown > 0 || resendLoading || !registeredEmail) return;
+    setResendLoading(true);
+    try {
+      await authApi.resendVerification(registeredEmail);
+      setResendDone(true);
+      setResendCooldown(60);
+      const tick = setInterval(() => {
+        setResendCooldown((c) => { if (c <= 1) { clearInterval(tick); return 0; } return c - 1; });
+      }, 1000);
+      setTimeout(() => setResendDone(false), 3000);
+    } catch { /* ignore */ } finally {
+      setResendLoading(false);
+    }
+  };
+
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(160deg, #f0f6ff 0%, #f8faff 60%, #f0f4ff 100%)' }}>
+        {/* bg blobs */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-[120px] opacity-30" style={{ background: '#1d6fe8' }} />
+        </div>
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="glass-card p-10 max-w-md w-full text-center space-y-6"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="relative w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl border border-slate-100 text-center space-y-6"
         >
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-            style={{ background: 'hsl(142 60% 40% / 0.1)', border: '2px solid hsl(142 60% 40% / 0.25)' }}
-          >
-            <Check className="w-8 h-8" style={{ color: 'hsl(142 60% 40%)' }} />
+          {/* Email icon */}
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto shadow-xl"
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #2563eb)' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
           </div>
+
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-foreground">Account Created!</h2>
+            <h2 className="text-2xl font-bold text-foreground">Check Your Email! 📬</h2>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              We&apos;ve sent a verification email to your inbox. Please verify your email address to activate your account.
+              We&apos;ve sent a verification link to:
             </p>
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 mx-auto">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d6fe8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              <span className="text-[#1d6fe8] font-semibold text-sm">{registeredEmail}</span>
+            </div>
           </div>
+
+          {/* Steps */}
+          <div className="text-left space-y-3">
+            {[
+              { n: '1', text: 'Open your email inbox', icon: '📥' },
+              { n: '2', text: 'Click the verification link from Zonvo', icon: '🔗' },
+              { n: '3', text: 'Come back and log in to your account', icon: '✅' },
+            ].map((s) => (
+              <div key={s.n} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
+                <span className="text-lg">{s.icon}</span>
+                <span className="text-foreground text-sm">{s.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Actions */}
           <button
             id="go-to-login"
             onClick={() => router.push('/login')}
-            className="w-full py-3 rounded-xl font-bold text-sm text-white btn-glow shadow-md"
-            style={{ background: 'linear-gradient(135deg, #1d6fe8, #1d6fe8)' }}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm text-white shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
+            style={{ background: 'linear-gradient(135deg, #1d6fe8, #2563eb)', boxShadow: '0 8px 25px rgba(29,111,232,0.3)' }}
           >
             Go to Login
           </button>
+
+          {/* Resend */}
+          <div className="space-y-2">
+            <p className="text-muted-foreground text-xs">Didn&apos;t receive it? Check your spam folder, or</p>
+            <button
+              id="resend-verification"
+              onClick={() => void handleResend()}
+              disabled={resendCooldown > 0 || resendLoading}
+              className="text-sm font-semibold transition-all disabled:opacity-50"
+              style={{ color: '#1d6fe8' }}
+            >
+              {resendLoading ? 'Sending…' : resendDone ? '✓ Sent!' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend verification email'}
+            </button>
+          </div>
         </motion.div>
       </div>
     );

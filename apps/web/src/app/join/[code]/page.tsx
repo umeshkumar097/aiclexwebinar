@@ -103,6 +103,7 @@ export default function JoinPage({
       watchUrl.searchParams.set('pos', String(result.currentPositionSeconds));
       watchUrl.searchParams.set('title', result.webinarTitle);
       watchUrl.searchParams.set('wid', result.webinarId);
+      watchUrl.searchParams.set('host', result.webinarTitle); // host name for end screen
       watchUrl.searchParams.set('watermark', s.enableWatermark ? '1' : '0');
       watchUrl.searchParams.set('chat', s.enableChat !== false ? '1' : '0');
       watchUrl.searchParams.set('polls', s.enablePolls !== false ? '1' : '0');

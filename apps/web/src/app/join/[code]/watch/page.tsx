@@ -32,15 +32,17 @@ export default function WatchPage({
   searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ name?: string; videoUrl?: string; pos?: string; title?: string; wid?: string; replay?: string; watermark?: string; chat?: string; polls?: string }>;
+  searchParams: Promise<{ name?: string; videoUrl?: string; pos?: string; title?: string; wid?: string; replay?: string; watermark?: string; chat?: string; polls?: string; host?: string }>;
 }) {
   const { code } = use(params);
-  const { name, videoUrl, pos, title, replay, watermark, chat, polls: pollsOpt } = use(searchParams);
+  const { name, videoUrl, pos, title, replay, watermark, chat, polls: pollsOpt, host } = use(searchParams);
 
   const displayName   = name  ?? 'Viewer';
   const startPos      = Number(pos ?? 0);
   const webinarTitle  = title ?? 'Live Webinar';
+  const hostName      = host  ?? webinarTitle;
   const replayBehavior: ReplayBehavior = (replay as ReplayBehavior) ?? 'stop';
+
 
   const videoRef        = useRef<HTMLVideoElement>(null);
   const liveVideoRef    = useRef<HTMLVideoElement>(null);
@@ -206,8 +208,10 @@ export default function WatchPage({
         .catch(() => setSessionEnded(true));
       return;
     }
-    setShowReplayModal(true);
+    // Participants always see the "ended" screen — no replay/loop modal
+    setSessionEnded(true);
   }, [looping, replayBehavior, code, displayName]);
+
 
   useEffect(() => {
     const es = webinarApi.openEventStream(code, displayName);
@@ -549,24 +553,28 @@ export default function WatchPage({
             )}
 
             {sessionEnded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-[#0a0a14] to-[#08080f] z-20">
-                <div className="flex flex-col items-center gap-5 px-6 text-center max-w-sm">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-600/30 to-violet-800/20 border border-blue-200 flex items-center justify-center text-4xl">
-                    🏁
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-20"
+                style={{ background: 'linear-gradient(160deg, #0a0a14 0%, #08080f 100%)' }}>
+                <div className="flex flex-col items-center gap-5 px-6 text-center max-w-sm w-full">
+                  {/* Host name / branding */}
+                  <div className="w-24 h-24 rounded-full flex items-center justify-center text-4xl font-bold text-white shadow-2xl"
+                    style={{ background: 'linear-gradient(135deg, #1d6fe8, #2563eb)', boxShadow: '0 0 60px rgba(29,111,232,0.4)' }}>
+                    {hostName.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h2 className="text-foreground font-bold text-2xl mb-2">Webinar Ended</h2>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      Thank you for joining! The session has ended.
-                    </p>
+                    <p className="text-white/50 text-xs uppercase tracking-widest mb-1">Presented by</p>
+                    <h2 className="text-white font-bold text-2xl mb-1">{hostName}</h2>
+                    <p className="text-white/60 text-sm">Thank you for attending this webinar!</p>
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-2xl px-5 py-3 text-center">
-                    <p className="text-muted-foreground text-xs mb-1">Duration watched</p>
-                    <p className="text-foreground font-bold font-mono text-lg">{fmt(elapsed)}</p>
+                  <div className="w-full h-px bg-white/10" />
+                  <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-center w-full">
+                    <p className="text-white/40 text-xs mb-1">You watched for</p>
+                    <p className="text-white font-bold font-mono text-2xl">{fmt(elapsed)}</p>
                   </div>
                   <button
                     onClick={() => window.history.back()}
-                    className="w-full py-3.5 rounded-2xl text-sm font-bold text-white bg-gradient-to-r from-[#1d6fe8] to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02]"
+                    className="w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    style={{ background: 'linear-gradient(135deg, #1d6fe8, #2563eb)', boxShadow: '0 8px 30px rgba(29,111,232,0.4)' }}
                   >
                     ← Back to Home
                   </button>

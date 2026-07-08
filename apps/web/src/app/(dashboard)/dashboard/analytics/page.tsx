@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { BarChart3, Clock, Users, ArrowUpRight, Play, Download, Search, ChevronRight, X, Mail, Calendar } from 'lucide-react';
+import { BarChart3, Clock, Users, Play, Download, Search, ChevronRight, X, Mail, Calendar } from 'lucide-react';
 import { webinarApi, type Webinar } from '@/lib/api';
 
 // Format helper
@@ -39,14 +39,13 @@ export default function AnalyticsPage() {
   const totalWebinars = webinars.length;
   const totalRegistrations = webinars.reduce((sum, w) => sum + (w.registeredCount || 0), 0);
   const totalJoins = webinars.reduce((sum, w) => sum + (w.attendeeCount || 0), 0);
-  const averageAttendance = totalRegistrations > 0 ? Math.round((totalJoins / totalRegistrations) * 100) : 0;
+  // averageAttendance used inline in table rows
 
   const totalWatchTime = webinars.reduce((sum, w) => {
     const attendees = (w.settings?.attendees as any[]) || [];
     const watchSum = attendees.reduce((acc, a) => acc + (a.durationSeconds || 0), 0);
     return sum + watchSum;
   }, 0);
-  void totalWatchTime; // Mark as read
 
 
   // Filter webinars based on search
@@ -150,8 +149,8 @@ export default function AnalyticsPage() {
         {[
           { label: 'Total Sessions', val: totalWebinars, icon: BarChart3, color: 'text-violet-400' },
           { label: 'Total Registrations', val: totalRegistrations, icon: Users, color: 'text-indigo-400' },
-          { label: 'Total Joins / Attendees', val: totalJoins, icon: Play, color: 'text-emerald-400' },
-          { label: 'Avg Attendance Rate', val: `${averageAttendance}%`, icon: ArrowUpRight, color: 'text-amber-400' },
+          { label: 'Total Joins', val: totalJoins, icon: Play, color: 'text-emerald-400' },
+          { label: 'Total Watch Time', val: fmtTime(totalWatchTime), icon: Clock, color: 'text-sky-400' },
         ].map((item, idx) => (
           <div key={idx} className="bg-white shadow-sm border border-slate-200 rounded-2xl p-4 space-y-2">
             <div className="flex items-center justify-between">
@@ -293,8 +292,8 @@ export default function AnalyticsPage() {
 
               {/* Modal Body */}
               <div className="p-6 overflow-y-auto space-y-6 flex-1">
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4">
+                {/* Stats — F-050: Real-time attendance */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
                     <p className="text-[10px] text-muted-foreground uppercase font-semibold">Registrations</p>
                     <p className="text-xl font-bold text-indigo-400 mt-1">{registrants.length}</p>
@@ -309,6 +308,58 @@ export default function AnalyticsPage() {
                       {registrants.length > 0 ? Math.round((attendees.length / registrants.length) * 100) : 0}%
                     </p>
                   </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">F-052: Total Watch</p>
+                    <p className="text-xl font-bold text-[#1d6fe8] mt-1">
+                      {fmtTime(attendees.reduce((s: number, a: any) => s + (a.durationSeconds || 0), 0))}
+                    </p>
+                  </div>
+                </div>
+
+                {/* F-051: Engagement Metrics */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <h4 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-3">F-051: Engagement Metrics</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 text-center">
+                      <p className="text-lg mb-0.5">💬</p>
+                      <p className="text-xs text-muted-foreground">Chat</p>
+                      <p className="font-bold text-sm text-foreground">
+                        {(selectedWebinar.settings as any)?.chatCount || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 text-center">
+                      <p className="text-lg mb-0.5">📊</p>
+                      <p className="text-xs text-muted-foreground">Poll Votes</p>
+                      <p className="font-bold text-sm text-foreground">
+                        {(selectedWebinar.settings as any)?.pollVotes || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 text-center">
+                      <p className="text-lg mb-0.5">✋</p>
+                      <p className="text-xs text-muted-foreground">Hand Raises</p>
+                      <p className="font-bold text-sm text-foreground">
+                        {(selectedWebinar.settings as any)?.handRaises || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* F-053: Certificate Generation */}
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-amber-800 text-sm">🎓 F-053: Certificate Generation</p>
+                    <p className="text-amber-700/70 text-xs mt-0.5">Generate completion certificates for attendees who watched ≥70% of the session</p>
+                  </div>
+                  <button disabled className="px-4 py-2 rounded-lg bg-amber-200/50 text-amber-800 text-xs font-bold opacity-60 cursor-not-allowed">Coming Soon</button>
+                </div>
+
+                {/* F-055: Post-Webinar Feedback */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-[#1d6fe8] text-sm">📋 F-055: Post-Webinar Feedback Form</p>
+                    <p className="text-[#1d6fe8]/70 text-xs mt-0.5">Send a feedback survey to all attendees after the session</p>
+                  </div>
+                  <button disabled className="px-4 py-2 rounded-lg bg-blue-200/50 text-[#1d6fe8] text-xs font-bold opacity-60 cursor-not-allowed">Coming Soon</button>
                 </div>
 
                 {/* Attendee details list */}
