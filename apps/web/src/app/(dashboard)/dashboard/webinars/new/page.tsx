@@ -971,7 +971,8 @@ function CreateWebinarForm() {
                   type="datetime-local"
                   value={form.scheduledAt}
                   onChange={(e) => update({ scheduledAt: e.target.value })}
-                  className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-violet-500/60 transition-all [color-scheme:dark]"
+                  className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/20 transition-all [color-scheme:light]"
+                  style={{ colorScheme: 'light' }}
                 />
               </div>
               <div className="space-y-1.5">
