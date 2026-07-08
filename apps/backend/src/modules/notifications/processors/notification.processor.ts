@@ -78,26 +78,26 @@ export class NotificationProcessor extends WorkerHost {
     const resend = new Resend(apiKey);
 
     let fromEmail = 'info@zonvo.in';
-    let fromName = 'Aiclex Webinar';
+    let fromName = 'Zonvo Webinar';
 
     if (templateKey.startsWith('auth.')) {
       fromEmail = 'security@zonvo.in';
-      fromName = 'Aiclex Security';
+      fromName = 'Zonvo Security';
     } else if (templateKey.startsWith('webinar.reminder')) {
       fromEmail = 'reminder@zonvo.in';
       fromName = 'Webinar Reminder';
     } else if (templateKey === 'webinar.started') {
       fromEmail = 'live@zonvo.in';
-      fromName = 'Aiclex Live';
+      fromName = 'Zonvo Live';
     } else if (templateKey === 'webinar.registration_confirmed') {
       fromEmail = 'registration@zonvo.in';
       fromName = 'Webinar Registration';
     } else if (templateKey.startsWith('member.')) {
       fromEmail = 'team@zonvo.in';
-      fromName = 'Aiclex Team';
+      fromName = 'Zonvo Team';
     } else if (templateKey.startsWith('admin.')) {
       fromEmail = 'admin@zonvo.in';
-      fromName = 'Aiclex Admin';
+      fromName = 'Zonvo Admin';
     }
 
     const { subject, html } = this.renderEmailTemplate(templateKey, variables);
@@ -167,17 +167,17 @@ export class NotificationProcessor extends WorkerHost {
 
     const wrap = (body: string, preheader = '') => `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Aiclex Webinar</title></head>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Zonvo Webinar</title></head>
 <body style="margin:0;padding:0;background:#09090b;font-family:'Segoe UI',Arial,sans-serif;">
   ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#09090b;">${preheader}</div>` : ''}
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#09090b;padding:32px 16px;"><tr><td align="center">
   <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#111113;border-radius:20px;border:1px solid #27272a;overflow:hidden;">
     <tr><td style="background:linear-gradient(135deg,#1e0a3c 0%,#2d1560 100%);padding:28px 40px;text-align:center;">
-      <span style="color:#fff;font-size:20px;font-weight:700;">🎬 Aiclex Webinar</span>
+      <span style="color:#fff;font-size:20px;font-weight:700;">🎬 Zonvo Webinar</span>
     </td></tr>
     <tr><td style="padding:36px 40px 28px;">${body}</td></tr>
     <tr><td style="background:#0d0d0f;padding:20px 40px;text-align:center;border-top:1px solid #27272a;">
-      <p style="color:#52525b;font-size:12px;margin:0 0 4px;">© 2025 Aiclex Webinar · <a href="https://webinar.zonvo.tech" style="color:#8b5cf6;text-decoration:none;">webinar.zonvo.tech</a></p>
+      <p style="color:#52525b;font-size:12px;margin:0 0 4px;">© 2025 Zonvo Webinar · <a href="https://webinar.zonvo.tech" style="color:#8b5cf6;text-decoration:none;">webinar.zonvo.tech</a></p>
       <p style="color:#3f3f46;font-size:11px;margin:0;">You received this because you have an account or registered for a webinar.</p>
     </td></tr>
   </table>
@@ -201,10 +201,10 @@ export class NotificationProcessor extends WorkerHost {
     const templates: Record<string, { subject: string; html: string }> = {
 
       'auth.verify_email': {
-        subject: `✉️ Verify your email — Aiclex Webinar`,
+        subject: `✉️ Verify your email — Zonvo Webinar`,
         html: wrap(`
 <h1 style="color:#fff;font-size:24px;font-weight:700;margin:0 0 10px;">Verify your email address 👋</h1>
-<p style="color:#a1a1aa;font-size:15px;line-height:1.7;margin:0 0 22px;">Hi <strong style="color:#fff;">${v['firstName'] ?? 'there'}</strong>, welcome to Aiclex Webinar! You're one step away — click below to activate your account.</p>
+<p style="color:#a1a1aa;font-size:15px;line-height:1.7;margin:0 0 22px;">Hi <strong style="color:#fff;">${v['firstName'] ?? 'there'}</strong>, welcome to Zonvo Webinar! You're one step away — click below to activate your account.</p>
 <div style="background:linear-gradient(135deg,#1e0a3c,#18181b);border:1px solid #6d28d9;border-radius:14px;padding:20px 24px;margin-bottom:22px;text-align:center;">
   <p style="color:#c4b5fd;font-size:13px;font-weight:600;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.08em;">Click below to activate your account</p>
   <p style="color:#6b7280;font-size:12px;margin:0;">Link expires in <strong style="color:#a1a1aa;">24 hours</strong></p>
@@ -213,11 +213,11 @@ ${btn('✅ Verify Email & Activate Account', v['verifyLink'] ?? '#', '#7c3aed')}
 ${divider}
 <p style="color:#52525b;font-size:12px;text-align:center;line-height:1.6;">Or copy: <span style="color:#8b5cf6;word-break:break-all;font-size:11px;">${v['verifyLink'] ?? '#'}</span></p>
 <p style="color:#3f3f46;font-size:12px;text-align:center;margin-top:10px;">Didn't create an account? Ignore this email.</p>
-`, `Verify your Aiclex Webinar account`),
+`, `Verify your Zonvo Webinar account`),
       },
 
       'auth.account_activated': {
-        subject: `🎉 Your Aiclex Webinar account is now active!`,
+        subject: `🎉 Your Zonvo Webinar account is now active!`,
         html: wrap(`
 <div style="text-align:center;margin-bottom:24px;">
   <div style="font-size:52px;margin-bottom:12px;">✅</div>
@@ -232,11 +232,11 @@ ${divider}
   ${step('4', 'Record sessions and share replays')}
 </div>
 ${btn('🏠 Go to Dashboard', v['dashboardLink'] ?? 'https://webinar.zonvo.tech/dashboard', '#059669')}
-`, `Your Aiclex Webinar account is active — start hosting!`),
+`, `Your Zonvo Webinar account is active — start hosting!`),
       },
 
       'auth.reset_password': {
-        subject: `🔐 Reset your password — Aiclex Webinar`,
+        subject: `🔐 Reset your password — Zonvo Webinar`,
         html: wrap(`
 <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 8px;">Password reset request</h1>
 <p style="color:#a1a1aa;font-size:15px;line-height:1.7;margin:0 0 20px;">Hi <strong style="color:#fff;">${v['firstName'] ?? 'there'}</strong>, we received a request to reset your password.</p>
@@ -244,11 +244,11 @@ ${btn('🔐 Reset My Password', v['resetLink'] ?? '#', '#dc2626')}
 <div style="background:#1c0a0a;border:1px solid #7f1d1d;border-radius:12px;padding:14px 18px;margin-top:8px;">
   <p style="color:#fca5a5;font-size:13px;margin:0;">⚠️ Expires in <strong>${v['expiryHours'] ?? '1'} hour</strong>. If you didn't request this, your account is safe.</p>
 </div>
-`, `Reset your Aiclex Webinar password`),
+`, `Reset your Zonvo Webinar password`),
       },
 
       'member.invited': {
-        subject: `🤝 You've been invited to join ${v['orgName'] ?? 'a workspace'} on Aiclex Webinar`,
+        subject: `🤝 You've been invited to join ${v['orgName'] ?? 'a workspace'} on Zonvo Webinar`,
         html: wrap(`
 <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0 0 8px;">Team invitation 🎊</h1>
 <p style="color:#a1a1aa;font-size:15px;line-height:1.7;margin:0 0 20px;">
@@ -258,7 +258,7 @@ ${btn('🔐 Reset My Password', v['resetLink'] ?? '#', '#dc2626')}
 </p>
 ${btn('🤝 Accept Invitation', v['acceptLink'] ?? '#', '#8b5cf6')}
 <p style="color:#52525b;font-size:12px;text-align:center;margin-top:8px;">Expires in <strong style="color:#a1a1aa;">24 hours</strong></p>
-`, `Join ${v['orgName'] ?? 'the workspace'} on Aiclex Webinar`),
+`, `Join ${v['orgName'] ?? 'the workspace'} on Zonvo Webinar`),
       },
 
       'webinar.registration_confirmed': {
@@ -365,7 +365,7 @@ ${btn('🔗 Open Joining Link', v['joinLink'] ?? '#', '#f59e0b')}
         html: wrap(`
 <h1 style="color:#fff;font-size:24px;font-weight:700;margin:0 0 10px;">You're invited to Zonvo! 🎊</h1>
 <p style="color:#a1a1aa;font-size:15px;line-height:1.7;margin:0 0 22px;">
-  Hi <strong style="color:#fff;">${v['firstName'] ?? 'there'}</strong>, you've been invited to join Aiclex Webinar as a
+  Hi <strong style="color:#fff;">${v['firstName'] ?? 'there'}</strong>, you've been invited to join Zonvo Webinar as a
   <span style="background:#2d1560;color:#c4b5fd;padding:2px 10px;border-radius:6px;font-size:13px;font-weight:600;">${v['role'] ?? 'host'}</span>.
 </p>
 <div style="background:linear-gradient(135deg,#1e0a3c,#18181b);border:1px solid #6d28d9;border-radius:14px;padding:20px 24px;margin-bottom:22px;">
@@ -378,7 +378,7 @@ ${btn('🔗 Open Joining Link', v['joinLink'] ?? '#', '#f59e0b')}
 ${btn('✅ Accept Invitation', v['inviteLink'] ?? '#', '#7c3aed')}
 ${divider}
 <p style="color:#52525b;font-size:12px;text-align:center;">This invitation expires in <strong style="color:#a1a1aa;">${v['expiresIn'] ?? '7 days'}</strong>. If you did not expect this, you can safely ignore it.</p>
-`, `You've been invited to join Aiclex Webinar as a ${v['role'] ?? 'host'}`),
+`, `You've been invited to join Zonvo Webinar as a ${v['role'] ?? 'host'}`),
       },
 
       'admin.license_assigned': {
@@ -427,8 +427,8 @@ ${divider}
     const tmpl = templates[templateKey];
     if (!tmpl) {
       return {
-        subject: 'Notification from Aiclex Webinar',
-        html: wrap(`<p style="color:#a1a1aa;text-align:center;">You have a new notification from Aiclex Webinar.</p>`),
+        subject: 'Notification from Zonvo Webinar',
+        html: wrap(`<p style="color:#a1a1aa;text-align:center;">You have a new notification from Zonvo Webinar.</p>`),
       };
     }
 

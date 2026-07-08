@@ -120,8 +120,8 @@ export const configuration = (): AppConfig => ({
   },
   email: {
     apiKey: process.env['RESEND_API_KEY'] ?? 're_78HLxBZx_JxHnQgW6NUej8j7aQCYMAXLj',
-    fromEmail: process.env['SMTP_FROM_EMAIL'] ?? process.env['RESEND_FROM_EMAIL'] ?? 'info@aiclexwebinar.in',
-    fromName: process.env['SMTP_FROM_NAME'] ?? process.env['RESEND_FROM_NAME'] ?? 'Aiclex Webinar',
+    fromEmail: process.env['SMTP_FROM_EMAIL'] ?? process.env['RESEND_FROM_EMAIL'] ?? 'info@zonvo.tech',
+    fromName: process.env['SMTP_FROM_NAME'] ?? process.env['RESEND_FROM_NAME'] ?? 'Zonvo Webinar',
     smtpHost: process.env['SMTP_HOST'] ?? 'smtp.hostinger.com',
     smtpPort: parseInt(process.env['SMTP_PORT'] ?? '465', 10),
     smtpUser: process.env['SMTP_USER'] ?? '',
