@@ -27,6 +27,12 @@ export function proxy(request: NextRequest): NextResponse {
   const token = request.cookies.get('zonvo_access_token')?.value;
   const isAuthenticated = !!token;
 
+  // ✅ Admin routes have their own auth system — skip regular middleware
+  // Admin layout handles auth guard itself via isAdminLoggedIn() cookie check
+  if (pathname.startsWith('/admin')) {
+    return NextResponse.next();
+  }
+
   const isPublicPath = PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(path + '/'),
   );
