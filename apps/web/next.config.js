@@ -1,10 +1,16 @@
 /** @type {import('next').NextConfig} */
+const BACKEND_URL =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  'http://localhost:3000';
+
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@zonvo/types', '@zonvo/constants'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.zonvo.io' },
+      { protocol: 'https', hostname: '*.zonvo.tech' },
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'http', hostname: 'minio' },
     ],
@@ -13,7 +19,7 @@ const nextConfig = {
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'http://localhost:3000/api/v1/:path*',
+        destination: `${BACKEND_URL}/api/v1/:path*`,
       },
     ];
   },
