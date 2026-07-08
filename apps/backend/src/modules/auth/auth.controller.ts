@@ -1,4 +1,4 @@
-import {
+import { BadRequestException, Query,
   Body,
   Controller,
   Delete,
@@ -162,7 +162,8 @@ export class AuthController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get current authenticated user profile' })
   async getMe(@CurrentUser() user: AuthenticatedUser): Promise<unknown> {
-    return user;
+    const managedBy = await this.authService.getManagedBy(user.userId);
+    return { ...user, managedByEmail: managedBy };
   }
 
   // ─── Change Password ─────────────────────────────────────────────────────────
@@ -198,4 +199,26 @@ export class AuthController {
   ): Promise<void> {
     await this.authService.revokeDeviceSession(user.userId, sessionId);
   }
+
+  // ─── Invitations ─────────────────────────────────────────────────────────────
+
+  @Get('invitation-info')
+  @ApiOperation({ summary: 'Get info about an invitation token' })
+  async getInvitationInfo(@Query('token') token: string) {
+    if (!token) throw new BadRequestException('Token is required');
+    return this.authService.getInvitationInfo(token);
+  }
+
+  @Post('accept-invite')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Accept an invitation and login' })
+  async acceptInvite(
+    @Body('token') token: string,
+    @Body('password') password?: string,
+  ) {
+    if (!token) throw new BadRequestException('Token is required');
+    const tokens = await this.authService.acceptInvite(token, password);
+    return tokens;
+  }
+
 }

@@ -8,6 +8,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { forwardRef, Inject } from '@nestjs/common';
+import { AdminService } from '../admin/admin.service';
+import { UserInvitation, InvitationStatus } from '../admin/entities/user-invitation.entity';
+import { LicenseAssignment } from '../admin/entities/license-assignment.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
@@ -71,6 +75,15 @@ export class AuthService {
 
     @InjectRepository(OrganizationMember)
     private readonly memberRepository: Repository<OrganizationMember>,
+
+    @InjectRepository(UserInvitation)
+    private readonly invitationRepository: Repository<UserInvitation>,
+
+    @InjectRepository(LicenseAssignment)
+    private readonly licenseAssignmentRepository: Repository<LicenseAssignment>,
+
+    @Inject(forwardRef(() => AdminService))
+    private readonly adminService: AdminService,
 
     @InjectRepository(Role)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -658,4 +671,96 @@ export class AuthService {
       { firstName, verifyLink },
     );
   }
+
+  // ─── Invitations ─────────────────────────────────────────────────────────────
+
+  async getInvitationInfo(token: string) {
+    const invitation = await this.invitationRepository.findOne({ where: { token } });
+    if (!invitation || invitation.status !== InvitationStatus.PENDING) {
+      throw new NotFoundException('Invitation not found, expired, or already accepted');
+    }
+
+    const user = await this.userRepository.findOne({ where: { email: invitation.email } });
+    return {
+      email: invitation.email,
+      firstName: invitation.firstName,
+      invitedByEmail: invitation.invitedByEmail,
+      userExists: !!user,
+    };
+  }
+
+  async acceptInvite(token: string, password?: string) {
+    const invitation = await this.invitationRepository.findOne({ where: { token } });
+    if (!invitation || invitation.status !== InvitationStatus.PENDING) {
+      throw new NotFoundException('Invitation not found, expired, or already accepted');
+    }
+
+    let user = await this.userRepository.findOne({ where: { email: invitation.email } });
+    
+    // Create user if not exists
+    if (!user) {
+      if (!password) throw new BadRequestException('Password is required for new users');
+      
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      try {
+        const newUser = queryRunner.manager.create(User, {
+          email: invitation.email,
+          status: UserStatus.ACTIVE,
+          emailVerifiedAt: new Date(),
+        });
+        user = await queryRunner.manager.save(User, newUser);
+
+        await queryRunner.manager.save(UserProfile, {
+          userId: user.id,
+          firstName: invitation.firstName,
+          lastName: invitation.lastName || '',
+          timezone: 'UTC',
+          locale: 'en',
+        });
+
+        const passwordHash = await bcrypt.hash(password, 12);
+        await queryRunner.manager.save(UserCredential, {
+          userId: user.id,
+          passwordHash,
+        });
+
+        await queryRunner.commitTransaction();
+      } catch (err) {
+        await queryRunner.rollbackTransaction();
+        throw err;
+      } finally {
+        await queryRunner.release();
+      }
+    }
+
+    // Assign license
+    if (invitation.licenseId) {
+      await this.adminService.assignLicense(user.id, invitation.licenseId);
+    }
+
+    // Update invitation status
+    invitation.status = InvitationStatus.ACCEPTED;
+    invitation.acceptedAt = new Date();
+    await this.invitationRepository.save(invitation);
+
+    // Generate tokens for auto-login
+    const { roles, permissions } = await this.getUserRolesAndPermissions(user.id);
+    return this.generateTokenPair(user.id, user.email, null, roles, permissions, {});
+  }
+
+
+  async getManagedBy(userId: string): Promise<string | null> {
+    const assignment = await this.licenseAssignmentRepository.findOne({
+      where: { userId, status: 'active' },
+    });
+    // If assigned by the system or self, we might not show it as managed by
+    if (assignment && assignment.assignedByEmail && assignment.assignedByEmail !== 'system') {
+      return assignment.assignedByEmail;
+    }
+    return null;
+  }
+
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuthStore } from '@/store/auth.store';
 import { motion } from 'framer-motion';
 import {
   Check,
@@ -82,6 +83,7 @@ const itemVariants = {
 
 export default function BillingPage(): React.ReactElement {
   const [toast, setToast] = useState<string | null>(null);
+  const { user } = useAuthStore();
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -116,6 +118,17 @@ export default function BillingPage(): React.ReactElement {
         </motion.div>
 
         {/* ─── Current Plan Banner ──────────────────────────── */}
+        {user?.managedByEmail && (
+          <motion.div variants={itemVariants}>
+            <div className="p-4 rounded-xl mb-4 flex items-start gap-3" style={{ background: '#fef3c7', border: '1px solid #fde68a', color: '#78350f' }}>
+              <Crown className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#d97706' }} />
+              <div>
+                <p className="text-sm font-bold">Billing managed by Admin</p>
+                <p className="text-xs mt-1 text-amber-800">Your license and billing are managed by {user.managedByEmail}. You will not be charged directly, and they have access to manage your account features, reports, and recordings.</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
         <motion.div variants={itemVariants}>
           <div
             className="glass-card p-5 flex items-center gap-4"
@@ -202,9 +215,13 @@ export default function BillingPage(): React.ReactElement {
                 ) : (
                   <button
                     id={`upgrade-${plan.id}`}
-                    onClick={() =>
+                    onClick={() => {
+                      if (user?.managedByEmail) {
+                        showToast('Your billing is managed by your admin. You cannot upgrade directly.');
+                        return;
+                      }
                       showToast(`${plan.name} plan is Coming Soon! We'll notify you when it's available.`)
-                    }
+                    }}
                     className="w-full py-2.5 rounded-xl text-sm font-semibold text-foreground transition-all shadow-sm hover:opacity-90 active:scale-[0.98]"
                     style={{
                       background: `linear-gradient(135deg, ${plan.iconColor}, ${

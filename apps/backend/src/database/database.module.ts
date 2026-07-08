@@ -27,6 +27,9 @@ import { Webhook } from '../modules/webhooks/entities/webhook.entity';
 import { WebhookDelivery } from '../modules/webhooks/entities/webhook-delivery.entity';
 import { Export } from '../modules/exports/entities/export.entity';
 import { Webinar } from '../modules/webinars/entities/webinar.entity';
+import { UserInvitation } from '../modules/admin/entities/user-invitation.entity';
+import { LicenseAssignment } from '../modules/admin/entities/license-assignment.entity';
+import { LicenseHistory } from '../modules/admin/entities/license-history.entity';
 
 @Module({
   imports: [
@@ -69,10 +72,14 @@ import { Webinar } from '../modules/webinars/entities/webinar.entity';
             Certificate,
             Export,
             Webinar,
+            UserInvitation,
+            LicenseAssignment,
+            LicenseHistory,
           ],
           migrations: ['dist/database/migrations/*.js'],
           migrationsRun: false,
-          synchronize: nodeEnv === 'development', // auto-create tables in dev; migrations in prod
+          synchronize: nodeEnv === 'development' || process.env.DB_SYNC === 'true', // auto-create tables
+
           logging: nodeEnv === 'development' ? 'all' : ['error', 'warn'],
           extra: {
             max: 20,

@@ -129,9 +129,19 @@ export interface AuthUser {
   roles: string[];
   permissions: string[];
   sessionId: string;
+  managedByEmail?: string | null;
 }
 
 export const authApi = {
+  getInvitationInfo: (token: string) =>
+    request<{ email: string; firstName: string; invitedByEmail: string; userExists: boolean }>(`/auth/invitation-info?token=${token}`),
+
+  acceptInvite: (token: string, password?: string) =>
+    request<TokenPair>('/auth/accept-invite', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
+
   register: (payload: RegisterPayload) =>
     request<{ userId: string; email: string; message: string }>('/auth/register', {
       method: 'POST',

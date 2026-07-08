@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -23,6 +23,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OrgScopeGuard } from './guards/org-scope.guard';
 import { RbacGuard } from './guards/rbac.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { UserInvitation } from '../admin/entities/user-invitation.entity';
+import { LicenseAssignment } from '../admin/entities/license-assignment.entity';
 
 @Module({
   imports: [
@@ -51,9 +53,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       OrganizationMember,
       Role,
       Permission,
+      UserInvitation,
+      LicenseAssignment,
     ]),
 
     BullModule.registerQueue({ name: QUEUE_NAMES.NOTIFICATIONS }),
+    forwardRef(() => import('../admin/admin.module').then(m => m.AdminModule)),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard, RbacGuard, OrgScopeGuard],
