@@ -105,7 +105,7 @@ export const adminApi = {
     create: (body: any) =>
       req<any>('/invitations', { method: 'POST', body: JSON.stringify(body) }),
     resend: (id: string) =>
-      req<any>(`/invitations/${id}/resend`, { method: 'POST' }),
+      req<any>(`/invitations/${id}/resend`, { method: 'POST', body: '{}' }),
     cancel: (id: string) =>
       req<any>(`/invitations/${id}`, { method: 'DELETE' }),
   },
