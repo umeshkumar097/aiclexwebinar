@@ -24,6 +24,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { WebinarsModule } from './modules/webinars/webinars.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { BillingModule } from './modules/billing/billing.module';
     FeatureFlagsModule,
     WebinarsModule,
     BillingModule,
+    AdminModule,
 
     // ─── System ──────────────────────────────────────────────────────────────
     HealthModule,
