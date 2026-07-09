@@ -12,7 +12,7 @@ import { MoreMenu }             from './components/MoreMenu';
 import { EmojiReactionsOverlay } from './components/EmojiReactions';
 import { NotificationToast, useToasts } from './components/NotificationToast';
 import { webinarApi } from '@/lib/api';
-import type { ChatMsg, QnAQuestion, Poll, CTAData, HostEvent } from './components/types';
+import type { ChatMsg, QnAQuestion, Poll, CTAData, Resource } from './components/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function fmt(sec: number) {
@@ -91,7 +91,7 @@ export default function AttendeeRoomPage({
   // ── Connection state ──────────────────────────────────────────────────────
   const [connState, setConnState] = useState<'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error'>('connecting');
   const [hostOnline, setHostOnline]         = useState(false);
-  const [participantCount, setParticipantCount] = useState(0);
+
   const [elapsed, setElapsed]               = useState(0);
   const [netQuality, setNetQuality]         = useState<'good' | 'poor' | null>(null);
   const [audioMuted, setAudioMuted]         = useState(false);
@@ -164,58 +164,98 @@ export default function AttendeeRoomPage({
     const es = webinarApi.openEventStream(code, displayName);
     eventSourceRef.current = es;
 
-    es.addEventListener('message', (e) => {
+    es.addEventListener('chat', (e: MessageEvent) => {
       try {
-        const ev = JSON.parse(e.data as string) as HostEvent;
+        const d = JSON.parse(e.data) as { user: string; message: string; time: string; isHost?: boolean };
+        setMessages((p) => [...p.slice(-199), {
+          id: `${Date.now()}-${Math.random()}`,
+          user: d.user,
+          message: d.message,
+          time: new Date(d.time),
+          isHost: d.isHost,
+        }]);
+      } catch {}
+    });
 
-        if (ev.type === 'message') {
-          setMessages((p) => [...p.slice(-199), {
-            id: `${Date.now()}-${Math.random()}`,
-            user: ev.user,
-            message: ev.message,
-            time: new Date(),
-            isHost: ev.isHost,
-          }]);
-        } else if (ev.type === 'announcement') {
-          const msg: ChatMsg = {
-            id: `${Date.now()}-ann`,
-            user: 'Host',
-            message: `📢 ${ev.text}`,
-            time: new Date(),
-            isHost: true,
-          };
-          setMessages((p) => [...p.slice(-199), msg]);
-          addToast({ type: 'info', message: `Announcement: ${ev.text}` });
-          setAnnouncement(ev.text);
-          if (annTimerRef.current) clearTimeout(annTimerRef.current);
-          annTimerRef.current = setTimeout(() => setAnnouncement(null), 8000);
-        } else if (ev.type === 'pin_message') {
-          setPinnedId(ev.messageId);
-        } else if (ev.type === 'reaction') {
-          setIncomingRxn({ emoji: ev.emoji, id: `${Date.now()}-${Math.random()}` });
-        } else if (ev.type === 'poll_start') {
-          setPolls((p) => p.find((x) => x.id === ev.poll.id) ? p : [ev.poll, ...p]);
-          setUnread((u) => ({ ...u, polls: u.polls + 1 }));
-          addToast({ type: 'poll', message: `New poll: ${ev.poll.question}`, icon: '📊' });
-        } else if (ev.type === 'poll_end') {
-          setPolls((p) => p.map((x) => x.id === ev.pollId ? { ...x, closed: true } : x));
-        } else if (ev.type === 'cta_show') {
-          setActiveCTA(ev.cta);
-          addToast({ type: 'offer', message: ev.cta.title, icon: '🎁' });
-        } else if (ev.type === 'cta_hide') {
-          setActiveCTA(null);
-        } else if (ev.type === 'resource_add') {
-          addToast({ type: 'resource', message: `New resource: ${ev.resource.name}`, icon: '📎' });
-        } else if (ev.type === 'host_mute') {
-          if (audioRef.current && !audioRef.current.muted) {
-            audioRef.current.muted = true;
-            setAudioMuted(true);
-            addToast({ type: 'warning', message: 'Host has muted your audio', icon: '🔇' });
-          }
-        } else if (ev.type === 'session_end') {
-          setSessionEnded(true);
+    es.addEventListener('announcement', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { text: string };
+        const msg: ChatMsg = {
+          id: `${Date.now()}-ann`,
+          user: 'Host',
+          message: `📢 ${d.text}`,
+          time: new Date(),
+          isHost: true,
+        };
+        setMessages((p) => [...p.slice(-199), msg]);
+        addToast({ type: 'info', message: `Announcement: ${d.text}` });
+        setAnnouncement(d.text);
+        if (annTimerRef.current) clearTimeout(annTimerRef.current);
+        annTimerRef.current = setTimeout(() => setAnnouncement(null), 8000);
+      } catch {}
+    });
+
+    es.addEventListener('pin_message', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { messageId: string };
+        setPinnedId(d.messageId);
+      } catch {}
+    });
+
+    es.addEventListener('reaction', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { emoji: string };
+        setIncomingRxn({ emoji: d.emoji, id: `${Date.now()}-${Math.random()}` });
+      } catch {}
+    });
+
+    es.addEventListener('poll_start', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { poll: Poll };
+        setPolls((p) => p.find((x) => x.id === d.poll.id) ? p : [d.poll, ...p]);
+        setUnread((u) => ({ ...u, polls: u.polls + 1 }));
+        addToast({ type: 'poll', message: `New poll: ${d.poll.question}`, icon: '📊' });
+      } catch {}
+    });
+
+    es.addEventListener('poll_end', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { pollId: string };
+        setPolls((p) => p.map((x) => x.id === d.pollId ? { ...x, closed: true } : x));
+      } catch {}
+    });
+
+    es.addEventListener('cta_show', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { cta: CTAData };
+        setActiveCTA(d.cta);
+        addToast({ type: 'offer', message: d.cta.title, icon: '🎁' });
+      } catch {}
+    });
+
+    es.addEventListener('cta_hide', () => {
+      setActiveCTA(null);
+    });
+
+    es.addEventListener('resource_add', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { resource: Resource };
+        addToast({ type: 'resource', message: `New resource: ${d.resource.name}`, icon: '📎' });
+      } catch {}
+    });
+
+    es.addEventListener('host_mute', () => {
+      try {
+        if (audioRef.current && !audioRef.current.muted) {
+          audioRef.current.muted = true;
+          setAudioMuted(true);
+          addToast({ type: 'warning', message: 'Host has muted your audio', icon: '🔇' });
         }
-      } catch { /* ignore */ }
+      } catch {}
+    });
+
+    es.addEventListener('session_ended', () => {
+      setSessionEnded(true);
     });
 
     es.onerror = () => {
@@ -321,7 +361,7 @@ export default function AttendeeRoomPage({
               producers: { id: string; kind: 'audio' | 'video'; appData?: Record<string, unknown> }[];
             };
 
-            setParticipantCount(producers.length > 0 ? 1 : 0);
+
 
             for (const producer of producers) {
               if (consumersRef.current.has(producer.id)) continue; // already consuming
@@ -698,12 +738,8 @@ export default function AttendeeRoomPage({
                   )}
                 </div>
 
-                {/* Right: Live badge + count */}
+                {/* Right: Live badge */}
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-xl px-2.5 py-1 border border-slate-200">
-                    <span className="text-xs">👥</span>
-                    <span className="text-white text-xs font-semibold">{participantCount + 1}</span>
-                  </div>
                   {connState === 'connected' && (
                     <div className="flex items-center gap-1.5 bg-red-600/80 backdrop-blur-sm rounded-xl px-2.5 py-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />

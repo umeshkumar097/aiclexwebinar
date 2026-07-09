@@ -430,7 +430,7 @@ export const webinarApi = {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
     const url = new URL(`${backendUrl}/api/v1/webinars/join/${code}/events`);
     url.searchParams.set('name', displayName);
-    return new EventSource(url.toString());
+    return new EventSource(url.toString(), { withCredentials: true });
   },
 };
 
