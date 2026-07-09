@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 /**
  * Zonvo MediaSoup SFU Server
  * Runs on: media.webinar.zonvo.tech (4.236.163.156)
