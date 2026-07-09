@@ -43,16 +43,16 @@ function CtrlBtn({ icon, label, active = true, danger = false, onClick, disabled
       onClick={onClick}
       disabled={disabled}
       title={label}
-      className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl transition-all duration-200 min-w-[72px] disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-lg transition-all duration-150 min-w-[64px] disabled:opacity-40 disabled:cursor-not-allowed ${
         danger
-          ? 'bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400'
+          ? 'hover:bg-white/10 text-red-400'
           : active
-          ? 'bg-slate-200 hover:bg-white/15 border border-slate-200 text-white'
-          : 'bg-slate-50 hover:bg-slate-100 border border-slate-200 text-muted-foreground hover:text-foreground'
+          ? 'hover:bg-white/10 text-white'
+          : 'hover:bg-white/10 text-[#b0b0b0] hover:text-white'
       }`}
     >
-      <span className="text-xl">{icon}</span>
-      <span className="text-[10px] font-medium">{label}</span>
+      <span className="text-xl leading-none">{icon}</span>
+      <span className="text-[10px] font-medium mt-0.5 leading-none">{label}</span>
     </button>
   );
 }
@@ -976,10 +976,10 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
   if (pageLoading) {
     return (
-      <div className="fixed inset-0 bg-slate-50 flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#1C1C1C' }}>
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground text-sm">Connecting to Live Studio backstage…</p>
+          <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/60 text-sm">Connecting to Live Studio backstage…</p>
         </div>
       </div>
     );
@@ -988,52 +988,50 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
   const isSemi = webinar?.mode === 'semi_live';
 
   return (
-    <div className="fixed inset-0 bg-slate-50 flex flex-col overflow-hidden z-50 select-none">
+    <div className="fixed inset-0 flex flex-col overflow-hidden z-50 select-none" style={{ background: '#111111' }}>
       {/* ── Top Bar ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white flex-shrink-0">
+      <div className="flex items-center justify-between px-4 flex-shrink-0" style={{ background: '#1C1C1C', height: '48px', borderBottom: '1px solid #2a2a2a' }}>
         <div className="flex items-center gap-3">
           <Link
             href={`/dashboard/webinars/${id}`}
-            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all font-bold"
-          >←</Link>
-          <div>
-            <p className="text-foreground font-semibold text-sm leading-tight truncate max-w-xs">{webinar?.title}</p>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[10px] text-violet-400 font-bold bg-violet-500/10 px-2 py-0.5 rounded border border-violet-500/20">
-                🔴 Studio Control
-              </span>
-            </div>
+            className="flex items-center justify-center transition-all font-bold text-white/60 hover:text-white"
+            title="Back to dashboard"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          </Link>
+          {/* Zonvo branding */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-sm" style={{ background: 'linear-gradient(135deg,#2563eb,#1d6fe8)' }}>Z</div>
+            <span className="text-white font-bold text-sm tracking-tight">Zonvo</span>
           </div>
+          <div className="w-px h-5" style={{ background: '#333' }} />
+          <p className="text-white/70 text-xs truncate max-w-[200px]">{webinar?.title}</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {recording && (
-            <div className="flex items-center gap-1.5 bg-red-600/20 border border-red-500/30 rounded-xl px-3 py-1.5 animate-pulse">
+            <div className="flex items-center gap-1.5 rounded px-2.5 py-1 animate-pulse" style={{ background: '#2a0a0a', border: '1px solid #7f1d1d' }}>
               <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-              <span className="text-red-400 font-bold text-xs tracking-wide">REC</span>
-              <span className="text-red-400/80 text-xs font-mono">{formatDuration(recordingTime)}</span>
+              <span className="text-red-400 font-bold text-[11px] tracking-widest">REC</span>
+              <span className="text-red-400/70 text-[11px] font-mono">{formatDuration(recordingTime)}</span>
             </div>
           )}
           {uploadingRecording && (
-            <div className="flex items-center gap-1.5 bg-violet-600/20 border border-violet-500/30 rounded-xl px-3 py-1.5">
+            <div className="flex items-center gap-1.5 rounded px-2.5 py-1" style={{ background: '#1a0d2e', border: '1px solid #4c1d95' }}>
               <div className="w-3 h-3 border border-violet-400 border-t-transparent rounded-full animate-spin" />
-              <span className="text-violet-400 text-xs font-semibold">Saving Rec…</span>
+              <span className="text-violet-300 text-[11px] font-semibold">Saving…</span>
             </div>
           )}
-          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-1.5">
+          <div className="flex items-center gap-1.5 rounded px-2.5 py-1" style={{ background: '#1a0505', border: '1px solid #7f1d1d' }}>
             <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-red-400 font-bold text-xs tracking-wide">LIVE</span>
-            <span className="text-red-400/80 text-xs font-mono">{formatDuration(elapsed)}</span>
+            <span className="text-red-400 font-bold text-[11px] tracking-widest">LIVE</span>
+            <span className="text-red-400/70 text-[11px] font-mono">{formatDuration(elapsed)}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
-            <span className="text-xs">👥</span>
-            <span className="text-foreground font-semibold text-sm">{participantCount}</span>
-            <span className="text-muted-foreground text-xs">watching</span>
+          <div className="flex items-center gap-1.5 rounded px-2.5 py-1" style={{ background: '#1a1a1a', border: '1px solid #333' }}>
+            <span className="text-white/50 text-xs">👥</span>
+            <span className="text-white font-semibold text-sm">{participantCount}</span>
+            <span className="text-white/40 text-xs">watching</span>
           </div>
-          <button
-            onClick={() => setShowEndConfirm(true)}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all"
-          >⏹ End Session</button>
         </div>
       </div>
 
@@ -1041,7 +1039,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
       <div className="flex flex-1 overflow-hidden">
         {/* Stage */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 relative bg-slate-100 overflow-hidden flex items-center justify-center">
+          <div className="flex-1 relative overflow-hidden flex items-center justify-center" style={{ background: '#1C1C1C' }}>
             {isSemi ? (
               // ── Semi-Live stage ──
               <>
@@ -1148,24 +1146,28 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
             )}
 
             {!isSemi && !cameraOn && (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-white">
-                <div className="w-20 h-20 rounded-full bg-violet-600 flex items-center justify-center text-3xl font-bold">H</div>
-                <p className="text-muted-foreground text-xs mt-2">Camera off</p>
+              <div className="w-full h-full flex flex-col items-center justify-center" style={{ background: '#1C1C1C' }}>
+                <div className="w-24 h-24 rounded-full flex items-center justify-center text-4xl font-black text-white" style={{ background: '#2a2a2a' }}>
+                  {(user?.email?.split('@')[0]?.charAt(0) ?? 'H').toUpperCase()}
+                </div>
+                <p className="text-white font-bold text-2xl mt-5 tracking-wide">{user?.email?.split('@')[0] ?? 'Host'}</p>
+                <p className="text-white/40 text-xs mt-2">Camera is off</p>
               </div>
             )}
           </div>
 
-          {/* Bottom controls */}
-          <div className="bg-white border-t border-slate-200 flex-shrink-0">
+          {/* Bottom controls — Zoom-style dark toolbar */}
+          <div className="flex-shrink-0" style={{ background: '#111111', borderTop: '1px solid #2a2a2a' }}>
             {/* Device selector panel (F-026) */}
             {showDevicePanel && !isSemi && (
-              <div className="px-4 py-3 border-b border-slate-200 bg-white flex flex-wrap gap-3 items-center">
+              <div className="px-4 py-3 flex flex-wrap gap-3 items-center" style={{ borderBottom: '1px solid #2a2a2a', background: '#1a1a1a' }}>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-[10px] font-semibold uppercase">Camera</span>
+                  <span className="text-white/40 text-[10px] font-semibold uppercase">Camera</span>
                   <select
                     value={selectedCamera}
                     onChange={(e) => void switchCamera(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 text-foreground text-xs focus:outline-none max-w-[180px]"
+                    className="rounded px-2 py-1 text-white text-xs focus:outline-none max-w-[180px]"
+                    style={{ background: '#2a2a2a', border: '1px solid #3a3a3a' }}
                   >
                     {cameras.map((c) => (
                       <option key={c.deviceId} value={c.deviceId}>{c.label || `Camera ${c.deviceId.slice(0,6)}`}</option>
@@ -1173,11 +1175,12 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-[10px] font-semibold uppercase">Mic</span>
+                  <span className="text-white/40 text-[10px] font-semibold uppercase">Mic</span>
                   <select
                     value={selectedMic}
                     onChange={(e) => void switchMic(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 text-foreground text-xs focus:outline-none max-w-[180px]"
+                    className="rounded px-2 py-1 text-white text-xs focus:outline-none max-w-[180px]"
+                    style={{ background: '#2a2a2a', border: '1px solid #3a3a3a' }}
                   >
                     {mics.map((m) => (
                       <option key={m.deviceId} value={m.deviceId}>{m.label || `Mic ${m.deviceId.slice(0,6)}`}</option>
@@ -1185,112 +1188,131 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                   </select>
                 </div>
                 <div className="flex items-center gap-2 ml-auto">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${micOn ? 'text-emerald-700 border-emerald-200 bg-emerald-50' : 'text-muted-foreground border-slate-200'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${micOn ? 'text-emerald-400 border-emerald-600/40 bg-emerald-900/20' : 'text-white/40 border-white/10'}`}>
                     {micOn ? '🎤 Noise Cancel ON' : '🔇 Mic Off'}
                   </span>
                 </div>
               </div>
             )}
 
-            <div className="px-4 py-3 flex items-center justify-center gap-2">
-            {!isSemi ? (
-              <>
-                <CtrlBtn icon={micOn ? '🎙' : '🔇'} label={micOn ? 'Mute' : 'Unmute'} active={micOn} onClick={() => void toggleMic()} />
-                <CtrlBtn icon={cameraOn ? '📹' : '📷'} label={cameraOn ? 'Cam Off' : 'Cam On'} active={cameraOn} onClick={() => void toggleCamera()} />
-                {/* F-019: Screen Share */}
+            {/* Zoom-style toolbar row */}
+            <div className="px-2 py-1 flex items-center justify-between" style={{ minHeight: '72px' }}>
+              {/* Left group: media controls */}
+              <div className="flex items-center">
+              {!isSemi ? (
+                <>
+                  <CtrlBtn icon={micOn ? '🎙' : '🔇'} label={micOn ? 'Mute' : 'Unmute'} active={micOn} onClick={() => void toggleMic()} />
+                  <CtrlBtn icon={cameraOn ? '📹' : '📷'} label={cameraOn ? 'Stop Video' : 'Start Video'} active={cameraOn} onClick={() => void toggleCamera()} />
+                  {/* F-019: Screen Share */}
+                  <CtrlBtn
+                    icon={screenSharing ? '🛑' : '🖥'}
+                    label={screenSharing ? 'Stop Share' : 'Share'}
+                    active={screenSharing}
+                    danger={screenSharing}
+                    onClick={() => void toggleScreenShare()}
+                  />
+                  {/* F-021: Background blur */}
+                  <CtrlBtn
+                    icon="🌫"
+                    label={bgBlur ? 'Blur On' : 'Blur'}
+                    active={bgBlur}
+                    onClick={() => void toggleBgBlur()}
+                  />
+                  {/* F-020: PiP */}
+                  <CtrlBtn
+                    icon={pipActive ? '📺' : '⬛'}
+                    label={pipActive ? 'Exit PiP' : 'PiP'}
+                    active={pipActive}
+                    onClick={() => void togglePiP()}
+                  />
+                  {/* F-026: Device settings */}
+                  <CtrlBtn
+                    icon="⚙️"
+                    label="Settings"
+                    active={showDevicePanel}
+                    onClick={() => {
+                      if (!showDevicePanel) void loadDevices();
+                      setShowDevicePanel((v) => !v);
+                    }}
+                  />
+                </>
+              ) : semiTakeover ? (
+                // Already live — show mic/cam controls for the live room
+                <>
+                  <CtrlBtn icon={micOn ? '🎙' : '🔇'} label={micOn ? 'Mute' : 'Unmute'} active={micOn} onClick={() => {
+                    if (audioProducerRef.current) {
+                      micOn ? audioProducerRef.current.pause() : audioProducerRef.current.resume();
+                    }
+                    setMicOn(v => !v);
+                  }} />
+                  <CtrlBtn icon={'📹'} label={'Cam On'} active={true} onClick={() => {}} />
+                  <div className="flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] text-emerald-400 font-semibold" style={{ background: '#0a1f0a', border: '1px solid #166534' }}>
+                    🔴 Live Camera Active
+                  </div>
+                </>
+              ) : (
+                // Semi-live: PiP camera + Go Live button
+                <>
+                  <CtrlBtn
+                    icon={semiMicOn ? '🎙' : '🔇'}
+                    label={semiMicOn ? 'Mic On' : 'Mic Off'}
+                    active={semiMicOn}
+                    onClick={() => setSemiMicOn((v) => !v)}
+                  />
+                  <CtrlBtn
+                    icon={semiCameraOn ? '📹' : '📷'}
+                    label={semiCameraOn ? 'Preview On' : 'Preview'}
+                    active={semiCameraOn}
+                    onClick={() => setSemiCameraOn((v) => !v)}
+                  />
+                  <button
+                    onClick={() => setShowTakeoverModal(true)}
+                    disabled={takeoverConnecting}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-white font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg,#dc2626,#e11d48)', boxShadow: '0 4px 14px rgba(220,38,38,0.3)' }}
+                  >
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    Go Live
+                  </button>
+                </>
+              )}
+              </div>
+
+              {/* Center: Record */}
+              <div className="flex items-center">
                 <CtrlBtn
-                  icon={screenSharing ? '🛑' : '🖥'}
-                  label={screenSharing ? 'Stop Share' : 'Share Screen'}
-                  active={screenSharing}
-                  danger={screenSharing}
-                  onClick={() => void toggleScreenShare()}
+                  icon={recording ? '🔴' : '⏺'}
+                  label={recording ? 'Recording' : 'Record'}
+                  active={recording}
+                  danger={recording}
+                  onClick={recording ? stopRecording : startRecording}
+                  disabled={uploadingRecording}
                 />
-                {/* F-021: Background blur */}
-                <CtrlBtn
-                  icon="🌫"
-                  label={bgBlur ? 'Blur On' : 'Blur'}
-                  active={bgBlur}
-                  onClick={() => void toggleBgBlur()}
-                />
-                {/* F-020: PiP */}
-                <CtrlBtn
-                  icon={pipActive ? '📺' : '⬛'}
-                  label={pipActive ? 'Exit PiP' : 'PiP'}
-                  active={pipActive}
-                  onClick={() => void togglePiP()}
-                />
-                {/* F-026: Device settings */}
-                <CtrlBtn
-                  icon="⚙️"
-                  label="Settings"
-                  active={showDevicePanel}
-                  onClick={() => {
-                    if (!showDevicePanel) void loadDevices();
-                    setShowDevicePanel((v) => !v);
-                  }}
-                />
-              </>
-            ) : semiTakeover ? (
-              // Already live — show mic/cam controls for the live room
-              <>
-                <CtrlBtn icon={micOn ? '🎙' : '🔇'} label={micOn ? 'Mute' : 'Unmute'} active={micOn} onClick={() => {
-                  if (audioProducerRef.current) {
-                    micOn ? audioProducerRef.current.pause() : audioProducerRef.current.resume();
-                  }
-                  setMicOn(v => !v);
-                }} />
-                <CtrlBtn icon={'📹'} label={'Cam On'} active={true} onClick={() => {}} />
-                <div className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
-                  🔴 Live Camera Active
-                </div>
-              </>
-            ) : (
-              // Semi-live: PiP camera + Go Live button
-              <>
-                <CtrlBtn
-                  icon={semiMicOn ? '🎙' : '🔇'}
-                  label={semiMicOn ? 'Mic On' : 'Mic Off'}
-                  active={semiMicOn}
-                  onClick={() => setSemiMicOn((v) => !v)}
-                />
-                <CtrlBtn
-                  icon={semiCameraOn ? '📹' : '📷'}
-                  label={semiCameraOn ? 'Preview On' : 'Preview'}
-                  active={semiCameraOn}
-                  onClick={() => setSemiCameraOn((v) => !v)}
-                />
+              </div>
+
+              {/* Right: End button */}
+              <div className="flex items-center pr-2">
                 <button
-                  onClick={() => setShowTakeoverModal(true)}
-                  disabled={takeoverConnecting}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-bold text-xs shadow-lg shadow-red-500/20 hover:shadow-red-500/40 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                  onClick={() => setShowEndConfirm(true)}
+                  className="px-5 py-2 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95"
+                  style={{ background: '#EF4444', minWidth: '72px' }}
                 >
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  Go Live with Camera
+                  End
                 </button>
-              </>
-            )}
-            <div className="w-px h-10 bg-slate-100 mx-1" />
-            <CtrlBtn
-              icon={recording ? '🔴' : '⏺'}
-              label={recording ? 'Recording' : 'Record'}
-              active={recording}
-              danger={recording}
-              onClick={recording ? stopRecording : startRecording}
-              disabled={uploadingRecording}
-            />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Dynamic Sidebar Control Panel */}
-        <div className="w-[320px] border-l border-slate-200 bg-white flex flex-col overflow-hidden flex-shrink-0">
-          <div className="flex border-b border-slate-200 flex-shrink-0">
+        {/* Dynamic Sidebar Control Panel — light panel slides from right (Zoom style) */}
+        <div className="w-[320px] flex flex-col overflow-hidden flex-shrink-0" style={{ background: '#ffffff', borderLeft: '1px solid #e5e7eb' }}>
+          <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid #e5e7eb' }}>
             {(['chat', 'viewers', 'control'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActivePanel(tab)}
                 className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider transition-all border-b-2 ${
-                  activePanel === tab ? 'text-blue-600 border-blue-600 bg-slate-50' : 'text-muted-foreground border-transparent hover:text-muted-foreground'
+                  activePanel === tab ? 'text-blue-600 border-blue-600 bg-blue-50/50' : 'text-gray-500 border-transparent hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
                 {tab}
@@ -1664,26 +1686,29 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50"
+            className="fixed inset-0 flex items-center justify-center z-50"
+            style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white border border-slate-200 rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl"
+              className="rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl"
+              style={{ background: '#1e1e1e', border: '1px solid #2a2a2a' }}
             >
               <div className="text-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-600 to-rose-500 flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-red-500/30">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg"
+                  style={{ background: 'linear-gradient(135deg,#dc2626,#e11d48)', boxShadow: '0 8px 24px rgba(220,38,38,0.4)' }}>
                   📹
                 </div>
-                <h3 className="text-foreground font-bold text-xl mb-2">Go Live with Camera?</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <h3 className="text-white font-bold text-xl mb-2">Go Live with Camera?</h3>
+                <p className="text-white/60 text-sm leading-relaxed">
                   The pre-recorded video will stop. Your live camera and microphone will be visible to all attendees in real time.
                 </p>
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
-                <p className="text-amber-700 text-xs font-medium">
+              <div className="rounded-xl px-4 py-3 mb-6" style={{ background: '#2a1f00', border: '1px solid #78350f' }}>
+                <p className="text-amber-300 text-xs font-medium">
                   ⚠️ This action cannot be undone. Once you go live, you cannot return to the pre-recorded video.
                 </p>
               </div>
@@ -1691,13 +1716,15 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => void handleGoLiveTakeover()}
-                  className="w-full py-3.5 rounded-2xl text-sm font-bold text-white bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ background: 'linear-gradient(135deg,#dc2626,#e11d48)', boxShadow: '0 8px 24px rgba(220,38,38,0.35)' }}
                 >
                   🔴 Yes, Go Live Now
                 </button>
                 <button
                   onClick={() => setShowTakeoverModal(false)}
-                  className="w-full py-3 rounded-2xl text-sm font-medium text-muted-foreground hover:text-foreground bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all"
+                  className="w-full py-3 rounded-2xl text-sm font-medium transition-all"
+                  style={{ background: '#2a2a2a', border: '1px solid #3a3a3a', color: '#aaa' }}
                 >
                   Cancel — Keep Video Playing
                 </button>
@@ -1710,14 +1737,14 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
       {/* End Session Confirm modal */}
       <AnimatePresence>
         {showEndConfirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white border border-slate-200 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl" style={{ background: '#1e1e1e', border: '1px solid #2a2a2a' }}>
               <div className="text-4xl mb-4 text-center">⏹</div>
-              <h3 className="text-foreground font-bold text-lg text-center mb-2">End Live Session?</h3>
-              <p className="text-muted-foreground text-sm text-center mb-6">Duration: <strong className="text-foreground">{formatDuration(elapsed)}</strong> · {participantCount} viewers</p>
+              <h3 className="text-white font-bold text-lg text-center mb-2">End Live Session?</h3>
+              <p className="text-white/50 text-sm text-center mb-6">Duration: <strong className="text-white">{formatDuration(elapsed)}</strong> · {participantCount} viewers</p>
               <div className="flex gap-3">
-                <button onClick={() => setShowEndConfirm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-foreground bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all">Cancel</button>
-                <button onClick={() => { setShowEndConfirm(false); void handleEndSession(); }} disabled={ending} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 disabled:opacity-50 transition-all">
+                <button onClick={() => setShowEndConfirm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/70 transition-all" style={{ background: '#2a2a2a', border: '1px solid #3a3a3a' }}>Cancel</button>
+                <button onClick={() => { setShowEndConfirm(false); void handleEndSession(); }} disabled={ending} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all" style={{ background: '#EF4444' }}>
                   {ending ? 'Ending…' : 'End Session'}
                 </button>
               </div>
