@@ -562,12 +562,12 @@ export default function AttendeeRoomPage({
   // ── Error screen ──────────────────────────────────────────────────────────
   if (!roomId || connState === 'error') {
     return (
-      <div className="fixed inset-0 bg-slate-50 flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#1C1C1C' }}>
         <div className="text-center px-6">
           <div className="text-5xl mb-4">⚠️</div>
-          <p className="text-foreground font-medium mb-1">Could not join the session</p>
-          <p className="text-muted-foreground text-sm mb-5">Your link may have expired or the server is unavailable</p>
-          <a href={`/join/${code}`} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1d6fe8] hover:bg-[#1d6fe8] transition-colors">
+          <p className="text-white font-medium mb-1">Could not join the session</p>
+          <p className="text-white/50 text-sm mb-5">Your link may have expired or the server is unavailable</p>
+          <a href={`/join/${code}`} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1d6fe8] hover:bg-[#1558c0] transition-colors">
             ← Rejoin
           </a>
         </div>
@@ -581,7 +581,8 @@ export default function AttendeeRoomPage({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 bg-black flex flex-col overflow-hidden select-none"
+      className="fixed inset-0 flex flex-col overflow-hidden select-none"
+      style={{ background: '#1C1C1C' }}
       onMouseMove={bumpControls}
       onTouchStart={bumpControls}
       onClick={bumpControls}
@@ -672,7 +673,8 @@ export default function AttendeeRoomPage({
           <div className="absolute top-3 left-3 z-30 pointer-events-auto">
             <button
               onClick={() => setShowLeaveConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-sm border border-slate-200 text-foreground hover:text-foreground hover:bg-red-500/20 hover:border-red-500/30 transition-all text-xs font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-medium text-white hover:opacity-80"
+              style={{ background: '#EF4444' }}
             >
               <span>←</span>
               <span>Leave</span>
@@ -748,44 +750,100 @@ export default function AttendeeRoomPage({
           </div>
           </div>{/* end video area */}
 
-          {/* ── F-031 + F-032: Reactions + Raise Hand bottom bar ── */}
-          <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-2.5 flex items-center gap-2 z-20">
-            {/* Emoji reactions (F-031) */}
-            <div className="flex items-center gap-1.5 flex-1">
-              <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider mr-1">React</span>
-              {REACTIONS.map((emoji) => (
+          {/* ── F-031 + F-032: Zoom-style bottom toolbar ── */}
+          <div className="flex-shrink-0 flex items-center justify-between px-2 z-20" style={{ background: '#111111', borderTop: '1px solid #2a2a2a', minHeight: '72px' }}>
+            {/* Left: Audio + Video + Raise Hand + React */}
+            <div className="flex items-center">
+              {/* Audio toggle */}
+              <button
+                onClick={() => { if (audioRef.current) { audioRef.current.muted = !audioRef.current.muted; setAudioMuted((v) => !v); } }}
+                className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-lg transition-all min-w-[64px] hover:bg-white/10 ${audioMuted ? 'text-red-400' : 'text-white'}`}
+                title={audioMuted ? 'Unmute audio' : 'Mute audio'}
+              >
+                <span className="text-xl leading-none">{audioMuted ? '🔇' : '🔊'}</span>
+                <span className="text-[10px] font-medium mt-0.5">{audioMuted ? 'Unmute' : 'Mute'}</span>
+              </button>
+
+              {/* Raise Hand */}
+              <button
+                onClick={toggleRaiseHand}
+                className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-lg transition-all min-w-[64px] hover:bg-white/10 ${
+                  handRaised ? 'text-amber-400' : 'text-white'
+                }`}
+                title={handRaised ? 'Lower hand' : 'Raise hand'}
+              >
+                <span className="text-xl leading-none">{handRaised ? '✋' : '✋'}</span>
+                <span className="text-[10px] font-medium mt-0.5">{handRaised ? 'Lower Hand' : 'Raise Hand'}</span>
+              </button>
+
+              {/* Emoji reactions */}
+              <div className="relative group">
                 <button
-                  key={emoji}
-                  onClick={() => sendReaction(emoji)}
-                  className="text-xl hover:scale-125 active:scale-110 transition-transform hover:-translate-y-1 duration-150 select-none"
-                  title={`Send ${emoji}`}
+                  className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-lg transition-all min-w-[64px] hover:bg-white/10 text-white"
+                  title="React"
                 >
-                  {emoji}
+                  <span className="text-xl leading-none">😊</span>
+                  <span className="text-[10px] font-medium mt-0.5">React</span>
                 </button>
-              ))}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center gap-1.5 rounded-xl px-3 py-2 shadow-xl z-30" style={{ background: '#1e1e1e', border: '1px solid #2a2a2a' }}>
+                  {REACTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => sendReaction(emoji)}
+                      className="text-xl hover:scale-125 active:scale-110 transition-transform select-none"
+                      title={`Send ${emoji}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* F-032: Raise Hand */}
-            <button
-              onClick={toggleRaiseHand}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
-                handRaised
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-400 animate-pulse'
-                  : 'bg-white border-slate-200 text-muted-foreground hover:text-foreground hover:bg-white/[0.08]'
-              }`}
-              title={handRaised ? 'Lower hand' : 'Raise hand'}
-            >
-              <span className="text-base">✋</span>
-              <span>{handRaised ? 'Hand Raised' : 'Raise Hand'}</span>
-            </button>
+            {/* Center: session title */}
+            <p className="text-white/40 text-xs font-medium truncate max-w-[28%] text-center hidden md:block">{webinarTitle}</p>
+
+            {/* Right: Chat + PiP + Fullscreen + Leave */}
+            <div className="flex items-center gap-1">
+              {/* PiP */}
+              {'pictureInPictureEnabled' in document && hostOnline && (
+                <button
+                  onClick={() => void togglePiP()}
+                  className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-lg transition-all min-w-[56px] hover:bg-white/10 text-white"
+                  title="Picture-in-Picture"
+                >
+                  <span className="text-xl leading-none">⧉</span>
+                  <span className="text-[10px] font-medium mt-0.5">PiP</span>
+                </button>
+              )}
+              {/* Fullscreen */}
+              <button
+                onClick={() => void toggleFullscreen()}
+                className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-lg transition-all min-w-[56px] hover:bg-white/10 text-white"
+                title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              >
+                <span className="text-xl leading-none">⛶</span>
+                <span className="text-[10px] font-medium mt-0.5">{fullscreen ? 'Exit FS' : 'Fullscreen'}</span>
+              </button>
+              {/* Leave — RED */}
+              <button
+                onClick={() => setShowLeaveConfirm(true)}
+                className="flex flex-col items-center gap-1 px-3 py-2.5 rounded-lg transition-all min-w-[64px] hover:opacity-90 text-white"
+                style={{ background: '#EF4444' }}
+                title="Leave"
+              >
+                <span className="text-xl leading-none">🚪</span>
+                <span className="text-[10px] font-medium mt-0.5">Leave</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* ════ DESKTOP SIDE PANEL ════ */}
         {panelOpen && (
-          <div className="hidden md:flex w-[300px] xl:w-80 border-l border-slate-200 bg-white flex-col flex-shrink-0 overflow-hidden">
+          <div className="hidden md:flex w-[300px] xl:w-80 flex-col flex-shrink-0 overflow-hidden" style={{ background: '#ffffff', borderLeft: '1px solid #e5e7eb' }}>
             {/* Tab header */}
-            <div className="flex border-b border-slate-200 flex-shrink-0">
+            <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid #e5e7eb' }}>
               {PANEL_TABS.map((t) => {
                 if (t.id === 'chat' && chat === '0') return null;
                 if (t.id === 'polls' && pollsOpt === '0') return null;
@@ -796,7 +854,7 @@ export default function AttendeeRoomPage({
                     key={t.id}
                     onClick={() => togglePanel(t.id)}
                     className={`relative flex-1 py-2.5 flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
-                      sidePanel === t.id ? 'text-[#1d6fe8] border-b-2 border-[#1d6fe8]' : 'text-muted-foreground hover:text-muted-foreground'
+                      sidePanel === t.id ? 'text-[#1d6fe8] border-b-2 border-[#1d6fe8] bg-blue-50/50' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                     }`}
                   >
                     <span className="text-sm">{t.icon}</span>
@@ -824,7 +882,7 @@ export default function AttendeeRoomPage({
       </div>
 
       {/* ════ MOBILE BOTTOM NAV ════ */}
-      <div className="md:hidden flex items-stretch border-t border-slate-200 bg-white flex-shrink-0 safe-area-inset-bottom">
+      <div className="md:hidden flex items-stretch flex-shrink-0 safe-area-inset-bottom" style={{ background: '#111111', borderTop: '1px solid #2a2a2a', minHeight: '64px' }}>
         {PANEL_TABS.map((t) => {
           if (t.id === 'chat' && chat === '0') return null;
           if (t.id === 'polls' && pollsOpt === '0') return null;
@@ -835,7 +893,7 @@ export default function AttendeeRoomPage({
               key={t.id}
               onClick={() => togglePanel(t.id)}
               className={`relative flex-1 py-2.5 flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
-                sidePanel === t.id ? 'text-[#1d6fe8]' : 'text-muted-foreground'
+                sidePanel === t.id ? 'text-[#1d6fe8]' : 'text-white/50 hover:text-white'
               }`}
             >
               <span className="text-lg">{t.icon}</span>
@@ -852,7 +910,7 @@ export default function AttendeeRoomPage({
 
       {/* ════ MOBILE BOTTOM SHEET ════ */}
       {panelOpen && (
-        <div className="md:hidden fixed inset-x-0 bottom-14 h-[58vh] bg-white border-t border-slate-200 rounded-t-2xl overflow-hidden z-30 flex flex-col shadow-2xl">
+        <div className="md:hidden fixed inset-x-0 bottom-16 h-[58vh] rounded-t-2xl overflow-hidden z-30 flex flex-col shadow-2xl" style={{ background: '#ffffff', border: '1px solid #e5e7eb' }}>
           <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
             <div className="w-10 h-1 bg-white/20 rounded-full" />
           </div>
@@ -868,20 +926,22 @@ export default function AttendeeRoomPage({
 
       {/* ════ LEAVE CONFIRM MODAL ════ */}
       {showLeaveConfirm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 w-[280px] shadow-2xl">
-            <p className="text-foreground font-bold text-base text-center mb-1">Leave Webinar?</p>
-            <p className="text-muted-foreground text-xs text-center mb-5">You can rejoin using the same link.</p>
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}>
+          <div className="rounded-2xl p-6 w-[280px] shadow-2xl" style={{ background: '#1e1e1e', border: '1px solid #2a2a2a' }}>
+            <p className="text-white font-bold text-base text-center mb-1">Leave Webinar?</p>
+            <p className="text-white/50 text-xs text-center mb-5">You can rejoin using the same link.</p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={handleLeave}
-                className="w-full py-3 rounded-xl text-sm font-bold text-foreground bg-red-600 hover:bg-red-500 transition-colors"
+                className="w-full py-3 rounded-xl text-sm font-bold text-white transition-colors"
+                style={{ background: '#EF4444' }}
               >
                 Leave Session
               </button>
               <button
                 onClick={() => setShowLeaveConfirm(false)}
-                className="w-full py-3 rounded-xl text-sm font-medium text-muted-foreground bg-white hover:bg-white/[0.08] border border-slate-200 transition-colors"
+                className="w-full py-3 rounded-xl text-sm font-medium text-white/60 transition-colors"
+                style={{ background: '#2a2a2a', border: '1px solid #3a3a3a' }}
               >
                 Stay
               </button>
