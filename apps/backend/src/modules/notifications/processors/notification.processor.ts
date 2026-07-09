@@ -211,7 +211,7 @@ export class NotificationProcessor extends WorkerHost {
 </div>
 ${btn('✅ Verify Email & Activate Account', v['verifyLink'] ?? '#', '#7c3aed')}
 ${divider}
-<p style="color:#52525b;font-size:12px;text-align:center;line-height:1.6;">Or copy: <span style="color:#8b5cf6;word-break:break-all;font-size:11px;">${v['verifyLink'] ?? '#'}</span></p>
+<p style="color:#52525b;font-size:12px;text-align:center;line-height:1.6;">Or copy: <a href="${v['verifyLink'] ?? '#'}" style="color:#8b5cf6;word-break:break-all;font-size:11px;text-decoration:none;">${v['verifyLink'] ?? '#'}</a></p>
 <p style="color:#3f3f46;font-size:12px;text-align:center;margin-top:10px;">Didn't create an account? Ignore this email.</p>
 `, `Verify your Zonvo Webinar account`),
       },

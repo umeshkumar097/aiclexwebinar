@@ -7,7 +7,17 @@ import Link from 'next/link';
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  let token = searchParams.get('token');
+
+  // Fallback for malformed URLs where '=' was encoded to '%3D'
+  if (!token) {
+    for (const [key] of Array.from(searchParams.entries())) {
+      if (key.startsWith('token=')) {
+        token = key.substring('token='.length);
+        break;
+      }
+    }
+  }
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
