@@ -175,7 +175,7 @@ function AcceptInviteContent() {
       return;
     }
     authApi.getInvitationInfo(token)
-      .then((res: InviteInfo) => setInviteInfo(res))
+      .then((res) => setInviteInfo(res as unknown as InviteInfo))
       .catch((err: any) => setInfoError(err.message || 'This invitation link is invalid or has expired.'))
       .finally(() => setLoadingInfo(false));
   }, [token]);
@@ -214,7 +214,7 @@ function AcceptInviteContent() {
     await new Promise((r) => setTimeout(r, 5000));
 
     try {
-      const res = await authApi.acceptInvite(token, password || undefined, '1.0');
+      const res = await authApi.acceptInvite(token, password || undefined);
       login(res);
       setSuccess(true);
       setTimeout(() => router.push('/dashboard'), 1000);

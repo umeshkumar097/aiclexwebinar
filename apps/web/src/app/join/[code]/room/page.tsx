@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, use, useCallback } from 'react';
-import {
-  Room, RoomEvent, RemoteTrack, Track, ConnectionQuality,
-} from 'livekit-client';
+import { Device } from 'mediasoup-client';
+import type { Transport, Consumer } from 'mediasoup-client/lib/types';
 import { ChatTab }              from './components/ChatTab';
 import { QnATab }               from './components/QnATab';
 import { PollsTab }             from './components/PollsTab';
@@ -12,6 +11,7 @@ import { NotesPanel }           from './components/NotesPanel';
 import { MoreMenu }             from './components/MoreMenu';
 import { EmojiReactionsOverlay } from './components/EmojiReactions';
 import { NotificationToast, useToasts } from './components/NotificationToast';
+import { webinarApi } from '@/lib/api';
 import type { ChatMsg, QnAQuestion, Poll, CTAData, HostEvent } from './components/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -23,13 +23,11 @@ function fmt(sec: number) {
 
 type SidePanelTab = 'chat' | 'qna' | 'polls' | 'notes' | 'more' | null;
 
-// ─── Network bars ─────────────────────────────────────────────────────────────
-function NetBars({ quality }: { quality: ConnectionQuality | null }) {
-  if (!quality || quality === ConnectionQuality.Unknown) return null;
-  const bars = quality === ConnectionQuality.Excellent ? 4
-    : quality === ConnectionQuality.Good ? 3
-    : quality === ConnectionQuality.Poor ? 2 : 1;
-  const color = bars >= 3 ? 'bg-emerald-400' : bars === 2 ? 'bg-amber-400' : 'bg-red-400';
+// ─── Network quality bars (simple 1-4 bar display) ────────────────────────────
+function NetBars({ quality }: { quality: 'good' | 'poor' | null }) {
+  if (!quality) return null;
+  const bars = quality === 'good' ? 4 : 2;
+  const color = quality === 'good' ? 'bg-emerald-400' : 'bg-amber-400';
   return (
     <div className="flex items-end gap-0.5 h-4" title={`Network: ${quality}`}>
       {[1,2,3,4].map((b) => (
@@ -60,28 +58,42 @@ export default function AttendeeRoomPage({
   searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ token?: string; name?: string; url?: string; title?: string; watermark?: string; chat?: string; polls?: string }>;
+  searchParams: Promise<{
+    name?: string;
+    title?: string;
+    watermark?: string;
+    chat?: string;
+    polls?: string;
+    // MediaSoup params
+    roomId?: string;
+    peerId?: string;
+    serverUrl?: string;
+    secret?: string;
+  }>;
 }) {
   const { code }                    = use(params);
-  const { token, name, url, title, watermark, chat, polls: pollsOpt } = use(searchParams);
+  const { name, title, watermark, chat, polls: pollsOpt, roomId, peerId, serverUrl, secret } = use(searchParams);
 
-  const livekitUrl  = url ?? process.env.NEXT_PUBLIC_LIVEKIT_URL ?? '';
-  const displayName = name ?? 'Attendee';
+  const displayName  = name ?? 'Attendee';
   const webinarTitle = title ?? 'Live Webinar';
 
   // ── Refs ─────────────────────────────────────────────────────────────────
-  const roomRef      = useRef<Room | null>(null);
+  const deviceRef    = useRef<Device | null>(null);
+  const transportRef = useRef<Transport | null>(null);
+  const consumersRef = useRef<Map<string, Consumer>>(new Map());
   const videoRef     = useRef<HTMLVideoElement>(null);
   const audioRef     = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollProducersRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const eventSourceRef   = useRef<EventSource | null>(null);
 
   // ── Connection state ──────────────────────────────────────────────────────
   const [connState, setConnState] = useState<'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error'>('connecting');
   const [hostOnline, setHostOnline]         = useState(false);
   const [participantCount, setParticipantCount] = useState(0);
   const [elapsed, setElapsed]               = useState(0);
-  const [netQuality, setNetQuality]         = useState<ConnectionQuality | null>(null);
+  const [netQuality, setNetQuality]         = useState<'good' | 'poor' | null>(null);
   const [audioMuted, setAudioMuted]         = useState(false);
 
   // ── UI state ──────────────────────────────────────────────────────────────
@@ -90,7 +102,6 @@ export default function AttendeeRoomPage({
   const [fullscreen, setFullscreen]       = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [sessionEnded, setSessionEnded]   = useState(false);
-
 
   // ── Features state ────────────────────────────────────────────────────────
   const [messages, setMessages]   = useState<ChatMsg[]>([]);
@@ -146,69 +157,16 @@ export default function AttendeeRoomPage({
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  // ── LiveKit connection ────────────────────────────────────────────────────
+  // ── SSE host event stream ─────────────────────────────────────────────────
   useEffect(() => {
-    if (!token) { setConnState('error'); return; }
-    let cancelled = false;
+    if (!code || !displayName) return;
 
-    const room = new Room({
-      adaptiveStream: true,
-      dynacast: true,
-    });
-    roomRef.current = room;
+    const es = webinarApi.openEventStream(code, displayName);
+    eventSourceRef.current = es;
 
-    const syncCount = () => setParticipantCount(room.remoteParticipants.size);
-
-    room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
-      if (track.kind === Track.Kind.Video && videoRef.current) {
-        track.attach(videoRef.current);
-        setHostOnline(true);
-      }
-      if (track.kind === Track.Kind.Audio && audioRef.current) {
-        track.attach(audioRef.current);
-      }
-    });
-
-    room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
-      track.detach();
-      if (track.kind === Track.Kind.Video) setHostOnline(false);
-    });
-
-    room.on(RoomEvent.ParticipantConnected, syncCount);
-    room.on(RoomEvent.ParticipantDisconnected, syncCount);
-
-    room.on(RoomEvent.Reconnecting, () => {
-      if (!cancelled) {
-        setConnState('reconnecting');
-        addToast({ type: 'warning', message: 'Connection lost — reconnecting…' });
-      }
-    });
-
-    room.on(RoomEvent.Reconnected, () => {
-      if (!cancelled) {
-        setConnState('connected');
-        addToast({ type: 'success', message: 'Connection restored ✓' });
-      }
-    });
-
-    room.on(RoomEvent.Disconnected, () => {
-      if (!cancelled) {
-        // Check if room was closed by host (not by local leave)
-        // When host ends session, LiveKit disconnects everyone
-        setConnState('disconnected');
-        setSessionEnded(true);
-      }
-    });
-
-
-    room.on(RoomEvent.ConnectionQualityChanged, (quality, participant) => {
-      if (!participant || participant === room.localParticipant) setNetQuality(quality);
-    });
-
-    // ── Data channel ───────────────────────────────────────────────────────
-    room.on(RoomEvent.DataReceived, (data: Uint8Array) => {
+    es.addEventListener('message', (e) => {
       try {
-        const ev = JSON.parse(new TextDecoder().decode(data)) as HostEvent;
+        const ev = JSON.parse(e.data as string) as HostEvent;
 
         if (ev.type === 'message') {
           setMessages((p) => [...p.slice(-199), {
@@ -228,7 +186,6 @@ export default function AttendeeRoomPage({
           };
           setMessages((p) => [...p.slice(-199), msg]);
           addToast({ type: 'info', message: `Announcement: ${ev.text}` });
-          // F-036: Show banner for 8s
           setAnnouncement(ev.text);
           if (annTimerRef.current) clearTimeout(annTimerRef.current);
           annTimerRef.current = setTimeout(() => setAnnouncement(null), 8000);
@@ -250,42 +207,225 @@ export default function AttendeeRoomPage({
         } else if (ev.type === 'resource_add') {
           addToast({ type: 'resource', message: `New resource: ${ev.resource.name}`, icon: '📎' });
         } else if (ev.type === 'host_mute') {
-          // Host muted this participant's audio output
           if (audioRef.current && !audioRef.current.muted) {
             audioRef.current.muted = true;
             setAudioMuted(true);
             addToast({ type: 'warning', message: 'Host has muted your audio', icon: '🔇' });
           }
+        } else if (ev.type === 'session_end') {
+          setSessionEnded(true);
         }
       } catch { /* ignore */ }
     });
 
-    room.connect(livekitUrl, token)
-      .then(() => {
+    es.onerror = () => {
+      // SSE will auto-reconnect; no state change needed unless it's persistent
+    };
+
+    return () => {
+      es.close();
+      eventSourceRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, displayName]);
+
+  // ── MediaSoup connection ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!roomId || !peerId || !serverUrl || !secret) {
+      setConnState('error');
+      return;
+    }
+
+    let cancelled = false;
+    const baseUrl = serverUrl.replace(/\/$/, '');
+
+    const headers = { 'x-mediasoup-secret': secret };
+
+    const connectMediaSoup = async () => {
+      try {
+        // ── Step 1: Get RTP capabilities ───────────────────────────────────
+        const capRes = await fetch(`${baseUrl}/api/rooms/${roomId}/rtp-capabilities`, { headers });
+        if (!capRes.ok) throw new Error(`RTP cap fetch failed: ${capRes.status}`);
+        const { rtpCapabilities } = await capRes.json() as { rtpCapabilities: unknown };
+
+        if (cancelled) return;
+
+        // ── Step 2: Load device ────────────────────────────────────────────
+        const device = new Device();
+        deviceRef.current = device;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await device.load({ routerRtpCapabilities: rtpCapabilities as any });
+
+        if (cancelled) return;
+
+        // ── Step 3: Create recv transport ──────────────────────────────────
+        const tRes = await fetch(`${baseUrl}/api/rooms/${roomId}/transports`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ peerId, direction: 'recv', role: 'attendee' }),
+        });
+        if (!tRes.ok) throw new Error(`Transport create failed: ${tRes.status}`);
+        const transportData = await tRes.json() as {
+          id: string;
+          iceParameters: unknown;
+          iceCandidates: unknown;
+          dtlsParameters: unknown;
+          iceServers?: RTCIceServer[];
+        };
+
+        if (cancelled) return;
+
+        // ── Step 4: Create recv transport in device ────────────────────────
+        const transport = device.createRecvTransport({
+          id: transportData.id,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          iceParameters: transportData.iceParameters as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          iceCandidates: transportData.iceCandidates as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          dtlsParameters: transportData.dtlsParameters as any,
+          iceServers: transportData.iceServers,
+        });
+        transportRef.current = transport;
+
+        transport.on('connect', ({ dtlsParameters: dtls }, callback, errback) => {
+          fetch(`${baseUrl}/api/rooms/${roomId}/transports/${transportData.id}/connect`, {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dtlsParameters: dtls }),
+          })
+            .then(() => callback())
+            .catch((err: Error) => errback(err));
+        });
+
+        transport.on('connectionstatechange', (state) => {
+          if (cancelled) return;
+          if (state === 'connected') {
+            setNetQuality('good');
+          } else if (state === 'failed' || state === 'disconnected') {
+            setNetQuality('poor');
+            addToast({ type: 'warning', message: 'Connection unstable — reconnecting…' });
+          }
+        });
+
         if (cancelled) return;
         setConnState('connected');
-        syncCount();
-        // Attach existing tracks
-        room.remoteParticipants.forEach((p) => {
-          p.getTrackPublications().forEach((pub) => {
-            if (pub.track?.kind === Track.Kind.Video && videoRef.current) {
-              pub.track.attach(videoRef.current);
-              setHostOnline(true);
+
+        // ── Step 5 & 6: Consume producers ──────────────────────────────────
+        const consumeProducers = async () => {
+          if (cancelled) return;
+          try {
+            const pRes = await fetch(`${baseUrl}/api/rooms/${roomId}/producers`, { headers });
+            if (!pRes.ok) return;
+            const { producers } = await pRes.json() as {
+              producers: { id: string; kind: 'audio' | 'video'; appData?: Record<string, unknown> }[];
+            };
+
+            setParticipantCount(producers.length > 0 ? 1 : 0);
+
+            for (const producer of producers) {
+              if (consumersRef.current.has(producer.id)) continue; // already consuming
+
+              const cRes = await fetch(
+                `${baseUrl}/api/rooms/${roomId}/transports/${transportData.id}/consume`,
+                {
+                  method: 'POST',
+                  headers: { ...headers, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    peerId,
+                    producerId: producer.id,
+                    rtpCapabilities: device.rtpCapabilities,
+                  }),
+                },
+              );
+              if (!cRes.ok) continue;
+
+              const consumerData = await cRes.json() as {
+                id: string;
+                kind: 'audio' | 'video';
+                rtpParameters: unknown;
+                producerId: string;
+              };
+
+              if (cancelled) return;
+
+              const consumer = await transport.consume({
+                id: consumerData.id,
+                producerId: consumerData.producerId,
+                kind: consumerData.kind,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                rtpParameters: consumerData.rtpParameters as any,
+              });
+
+              consumersRef.current.set(producer.id, consumer);
+
+              // Resume the consumer on the server
+              await fetch(
+                `${baseUrl}/api/rooms/${roomId}/consumers/${consumer.id}/resume`,
+                { method: 'POST', headers },
+              ).catch(() => {/* best-effort */});
+
+              // Attach track
+              if (consumer.kind === 'video' && videoRef.current) {
+                const stream = videoRef.current.srcObject instanceof MediaStream
+                  ? videoRef.current.srcObject
+                  : new MediaStream();
+                stream.addTrack(consumer.track);
+                videoRef.current.srcObject = stream;
+                setHostOnline(true);
+              } else if (consumer.kind === 'audio' && audioRef.current) {
+                const stream = audioRef.current.srcObject instanceof MediaStream
+                  ? audioRef.current.srcObject
+                  : new MediaStream();
+                stream.addTrack(consumer.track);
+                audioRef.current.srcObject = stream;
+              }
+
+              consumer.on('trackended', () => {
+                if (consumer.kind === 'video') setHostOnline(false);
+                consumersRef.current.delete(producer.id);
+              });
             }
-            if (pub.track?.kind === Track.Kind.Audio && audioRef.current) {
-              pub.track.attach(audioRef.current);
-            }
-          });
-        });
-      })
-      .catch(() => { if (!cancelled) setConnState('error'); });
+
+            // Mark host as offline if no video producers
+            const hasVideo = producers.some((p) => p.kind === 'video');
+            if (!hasVideo) setHostOnline(false);
+
+          } catch { /* ignore poll errors */ }
+        };
+
+        // Initial consume
+        await consumeProducers();
+
+        // Poll every 3 seconds to detect new producers / host joining late
+        pollProducersRef.current = setInterval(() => {
+          void consumeProducers();
+        }, 3000);
+
+      } catch (err) {
+        if (!cancelled) {
+          console.error('[MediaSoup] Connection error:', err);
+          setConnState('error');
+        }
+      }
+    };
+
+    void connectMediaSoup();
 
     return () => {
       cancelled = true;
-      void room.disconnect();
+      if (pollProducersRef.current) clearInterval(pollProducersRef.current);
+      // Close all consumers
+      consumersRef.current.forEach((c) => { try { c.close(); } catch { /* ignore */ } });
+      consumersRef.current.clear();
+      // Close transport
+      try { transportRef.current?.close(); } catch { /* ignore */ }
+      transportRef.current = null;
+      deviceRef.current = null;
+      setHostOnline(false);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, livekitUrl]);
+  }, [roomId, peerId, serverUrl, secret]);
 
   // ── Session timer ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -295,6 +435,8 @@ export default function AttendeeRoomPage({
   }, [connState]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
+
+  /** Send chat via backend broadcast API (SSE fan-out) */
   const sendChat = useCallback(async (msg: string) => {
     const m: ChatMsg = {
       id: `${Date.now()}-${Math.random()}`,
@@ -304,21 +446,16 @@ export default function AttendeeRoomPage({
       isMe: true,
     };
     setMessages((p) => [...p.slice(-199), m]);
-    if (roomRef.current) {
-      const d = new TextEncoder().encode(JSON.stringify({ type: 'message', user: displayName, message: msg }));
-      await roomRef.current.localParticipant.publishData(d, { reliable: true });
-    }
-  }, [displayName]);
+    try {
+      await webinarApi.sendAttendeeMessage(code, displayName, msg);
+    } catch { /* fire-and-forget */ }
+  }, [displayName, code]);
 
-  const sendReaction = useCallback(async (emoji: string) => {
+  const sendReaction = useCallback((emoji: string) => {
     setIncomingRxn({ emoji, id: `${Date.now()}-${Math.random()}` });
-    if (roomRef.current) {
-      const d = new TextEncoder().encode(JSON.stringify({ type: 'reaction', emoji }));
-      await roomRef.current.localParticipant.publishData(d, { reliable: false });
-    }
   }, []);
 
-  const sendQuestion = useCallback(async (q: string) => {
+  const sendQuestion = useCallback((q: string) => {
     const question: QnAQuestion = {
       id: `${Date.now()}-${Math.random()}`,
       user: displayName,
@@ -327,28 +464,20 @@ export default function AttendeeRoomPage({
       upvotes: 0,
     };
     setQuestions((p) => [...p, question]);
-    if (roomRef.current) {
-      const d = new TextEncoder().encode(JSON.stringify({ type: 'qna_question', user: displayName, question: q, id: question.id }));
-      await roomRef.current.localParticipant.publishData(d, { reliable: true });
-    }
   }, [displayName]);
 
   const upvoteQuestion = useCallback((id: string) => {
     setQuestions((p) => p.map((q) => q.id === id && !q.hasUpvoted ? { ...q, upvotes: q.upvotes + 1, hasUpvoted: true } : q));
   }, []);
 
-  const votePoll = useCallback(async (pollId: string, optionId: string) => {
+  const votePoll = useCallback((pollId: string, optionId: string) => {
     setPolls((p) => p.map((poll) =>
       poll.id === pollId
         ? { ...poll, myVote: optionId, totalVotes: poll.totalVotes + 1,
             options: poll.options.map((o) => o.id === optionId ? { ...o, votes: o.votes + 1 } : o) }
         : poll,
     ));
-    if (roomRef.current) {
-      const d = new TextEncoder().encode(JSON.stringify({ type: 'poll_vote', pollId, optionId, user: displayName }));
-      await roomRef.current.localParticipant.publishData(d, { reliable: true });
-    }
-  }, [displayName]);
+  }, []);
 
   const togglePiP = useCallback(async () => {
     if (!videoRef.current) return;
@@ -372,29 +501,15 @@ export default function AttendeeRoomPage({
   }, []);
 
   // F-032: Raise / lower hand
-  const toggleRaiseHand = useCallback(async () => {
+  const toggleRaiseHand = useCallback(() => {
     const next = !handRaised;
     setHandRaised(next);
-    if (roomRef.current) {
-      const d = new TextEncoder().encode(
-        JSON.stringify({ type: 'raise_hand', user: displayName, raised: next }),
-      );
-      await roomRef.current.localParticipant.publishData(d, { reliable: true });
-    }
     // Auto-lower after 30 seconds
     if (handTimeoutRef.current) clearTimeout(handTimeoutRef.current);
     if (next) {
-      handTimeoutRef.current = setTimeout(() => {
-        setHandRaised(false);
-        if (roomRef.current) {
-          const d = new TextEncoder().encode(
-            JSON.stringify({ type: 'raise_hand', user: displayName, raised: false }),
-          );
-          void roomRef.current.localParticipant.publishData(d, { reliable: true });
-        }
-      }, 30000);
+      handTimeoutRef.current = setTimeout(() => setHandRaised(false), 30000);
     }
-  }, [handRaised, displayName]);
+  }, [handRaised]);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -402,6 +517,16 @@ export default function AttendeeRoomPage({
       if (handTimeoutRef.current) clearTimeout(handTimeoutRef.current);
       if (annTimerRef.current) clearTimeout(annTimerRef.current);
     };
+  }, []);
+
+  // ── Leave handler ─────────────────────────────────────────────────────────
+  const handleLeave = useCallback(() => {
+    if (pollProducersRef.current) clearInterval(pollProducersRef.current);
+    consumersRef.current.forEach((c) => { try { c.close(); } catch { /* ignore */ } });
+    consumersRef.current.clear();
+    try { transportRef.current?.close(); } catch { /* ignore */ }
+    eventSourceRef.current?.close();
+    window.history.back();
   }, []);
 
   // ── Session ended overlay (host ended the webinar) ───────────────────────
@@ -435,13 +560,13 @@ export default function AttendeeRoomPage({
   }
 
   // ── Error screen ──────────────────────────────────────────────────────────
-  if (!token || connState === 'error') {
+  if (!roomId || connState === 'error') {
     return (
       <div className="fixed inset-0 bg-slate-50 flex items-center justify-center">
         <div className="text-center px-6">
           <div className="text-5xl mb-4">⚠️</div>
           <p className="text-foreground font-medium mb-1">Could not join the session</p>
-          <p className="text-muted-foreground text-sm mb-5">Your link may have expired</p>
+          <p className="text-muted-foreground text-sm mb-5">Your link may have expired or the server is unavailable</p>
           <a href={`/join/${code}`} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1d6fe8] hover:bg-[#1d6fe8] transition-colors">
             ← Rejoin
           </a>
@@ -631,7 +756,7 @@ export default function AttendeeRoomPage({
               {REACTIONS.map((emoji) => (
                 <button
                   key={emoji}
-                  onClick={() => void sendReaction(emoji)}
+                  onClick={() => sendReaction(emoji)}
                   className="text-xl hover:scale-125 active:scale-110 transition-transform hover:-translate-y-1 duration-150 select-none"
                   title={`Send ${emoji}`}
                 >
@@ -642,7 +767,7 @@ export default function AttendeeRoomPage({
 
             {/* F-032: Raise Hand */}
             <button
-              onClick={() => void toggleRaiseHand()}
+              onClick={toggleRaiseHand}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
                 handRaised
                   ? 'bg-amber-500/20 border-amber-500/40 text-amber-400 animate-pulse'
@@ -688,9 +813,9 @@ export default function AttendeeRoomPage({
 
             {/* Panel body */}
             <div className="flex-1 overflow-hidden flex flex-col">
-              {sidePanel === 'chat'  && <ChatTab  messages={messages} onSend={(m) => void sendChat(m)} onReact={(e) => void sendReaction(e)} displayName={displayName} pinnedId={pinnedId} />}
-              {sidePanel === 'qna'   && <QnATab   questions={questions} onAsk={(q) => void sendQuestion(q)} onUpvote={upvoteQuestion} displayName={displayName} />}
-              {sidePanel === 'polls' && <PollsTab polls={polls} onVote={(pid, oid) => void votePoll(pid, oid)} />}
+              {sidePanel === 'chat'  && <ChatTab  messages={messages} onSend={(m) => void sendChat(m)} onReact={(e) => sendReaction(e)} displayName={displayName} pinnedId={pinnedId} />}
+              {sidePanel === 'qna'   && <QnATab   questions={questions} onAsk={(q) => sendQuestion(q)} onUpvote={upvoteQuestion} displayName={displayName} />}
+              {sidePanel === 'polls' && <PollsTab polls={polls} onVote={(pid, oid) => votePoll(pid, oid)} />}
               {sidePanel === 'notes' && <NotesPanel webinarCode={code} />}
               {sidePanel === 'more'  && <MoreMenu onSelect={handleMoreAction} />}
             </div>
@@ -732,9 +857,9 @@ export default function AttendeeRoomPage({
             <div className="w-10 h-1 bg-white/20 rounded-full" />
           </div>
           <div className="flex-1 overflow-hidden flex flex-col">
-            {sidePanel === 'chat'  && <ChatTab  messages={messages} onSend={(m) => void sendChat(m)} onReact={(e) => void sendReaction(e)} displayName={displayName} pinnedId={pinnedId} />}
-            {sidePanel === 'qna'   && <QnATab   questions={questions} onAsk={(q) => void sendQuestion(q)} onUpvote={upvoteQuestion} displayName={displayName} />}
-            {sidePanel === 'polls' && <PollsTab polls={polls} onVote={(pid, oid) => void votePoll(pid, oid)} />}
+            {sidePanel === 'chat'  && <ChatTab  messages={messages} onSend={(m) => void sendChat(m)} onReact={(e) => sendReaction(e)} displayName={displayName} pinnedId={pinnedId} />}
+            {sidePanel === 'qna'   && <QnATab   questions={questions} onAsk={(q) => sendQuestion(q)} onUpvote={upvoteQuestion} displayName={displayName} />}
+            {sidePanel === 'polls' && <PollsTab polls={polls} onVote={(pid, oid) => votePoll(pid, oid)} />}
             {sidePanel === 'notes' && <NotesPanel webinarCode={code} />}
             {sidePanel === 'more'  && <MoreMenu onSelect={handleMoreAction} />}
           </div>
@@ -749,10 +874,7 @@ export default function AttendeeRoomPage({
             <p className="text-muted-foreground text-xs text-center mb-5">You can rejoin using the same link.</p>
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => {
-                  void roomRef.current?.disconnect();
-                  window.history.back();
-                }}
+                onClick={handleLeave}
                 className="w-full py-3 rounded-xl text-sm font-bold text-foreground bg-red-600 hover:bg-red-500 transition-colors"
               >
                 Leave Session
@@ -769,7 +891,6 @@ export default function AttendeeRoomPage({
       )}
 
       {/* ════ CTA POPUP ════ */}
-
       <CTAPopup cta={activeCTA} onDismiss={() => setActiveCTA(null)} />
     </div>
   );
