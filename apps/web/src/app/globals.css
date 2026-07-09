@@ -2,52 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Design Tokens: White + Blue + Golden ──────────────────────────────────── */
+/* ─── Design Tokens: Zoom-style ─────────────────────────────────────────────── */
 :root {
   /* ── Background & Surface ── */
-  --background:    0 0% 97%;          /* #f7f7f7 soft white */
-  --foreground:    220 25% 15%;       /* #1e2433 rich dark-navy text */
+  --background:    210 17% 98%;       /* #F7F8FA Zoom page background */
+  --foreground:    220 47% 11%;       /* #1F2937 Zoom text */
   --card:          0 0% 100%;         /* pure white cards */
-  --card-foreground: 220 25% 15%;
+  --card-foreground: 220 47% 11%;
   --popover:       0 0% 100%;
-  --popover-foreground: 220 25% 15%;
+  --popover-foreground: 220 47% 11%;
 
-  /* ── Brand Blue ── */
-  --primary:       216 82% 51%;       /* #1d6fe8 royal blue */
+  /* ── Zoom Blue ── */
+  --primary:       224 100% 51%;      /* #0B5CFF Zoom blue */
   --primary-foreground: 0 0% 100%;
-  --primary-glow:  216 82% 51%;
+  --primary-glow:  224 100% 51%;
 
-  /* ── Golden ── */
-  --secondary:     43 96% 52%;        /* #d4af37 rich gold */
-  --secondary-foreground: 30 15% 15%;
+  /* ── Secondary ── */
+  --secondary:     220 14% 96%;       /* light grey */
+  --secondary-foreground: 220 47% 11%;
 
   /* ── Neutrals ── */
-  --accent:        217 80% 96%;       /* light blue tint */
-  --accent-foreground: 217 91% 40%;
-  --muted:         220 15% 94%;       /* very light grey */
-  --muted-foreground: 220 15% 45%;
+  --accent:        224 100% 95%;      /* #EFF4FF Zoom sidebar active bg */
+  --accent-foreground: 224 100% 51%;
+  --muted:         220 14% 96%;       /* very light grey */
+  --muted-foreground: 220 9% 46%;     /* #6B7280 */
   --destructive:   0 84% 55%;
   --destructive-foreground: 0 0% 100%;
-  --success:       142 60% 40%;
-  --warning:       43 96% 52%;
+  --success:       142 72% 29%;       /* #059669 */
+  --warning:       38 92% 50%;
 
   /* ── Borders ── */
-  --border:        220 20% 88%;       /* soft grey border */
-  --input:         220 20% 88%;
-  --ring:          216 82% 51%;
+  --border:        220 13% 91%;       /* #E5E7EB Zoom borders */
+  --input:         220 13% 91%;
+  --ring:          224 100% 51%;
 
   /* ── Radius ── */
-  --radius:        0.75rem;
+  --radius:        0.5rem;
 
   /* ── Sidebar ── */
-  --sidebar-width: 256px;
-  --sidebar-bg:    217 60% 97%;       /* very light blue-white */
-  --sidebar-border: 217 30% 88%;
-
-  /* ── Golden tokens ── */
-  --gold:          43 96% 52%;
-  --gold-light:    43 96% 65%;
-  --gold-dark:     38 90% 40%;
+  --sidebar-width: 220px;
+  --sidebar-bg:    0 0% 100%;         /* pure white */
+  --sidebar-border: 220 13% 91%;
 }
 
 /* ─── Base Resets ───────────────────────────────────────────────────────────── */
@@ -64,26 +59,22 @@
 
   body {
     @apply bg-background text-foreground;
-    background-color: #f4f7ff;
-    background-image:
-      radial-gradient(ellipse 70% 40% at 80% 0%, hsla(217, 91%, 60%, 0.08), transparent),
-      radial-gradient(ellipse 50% 30% at 10% 90%, hsla(43, 96%, 56%, 0.06), transparent);
-    background-attachment: fixed;
+    background-color: #F7F8FA;
   }
 
   /* ─── Scrollbar ─────────────────────────────────────────────────────────── */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: #f0f4ff; }
+  ::-webkit-scrollbar-track { background: #F7F8FA; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(29, 111, 232, 0.35);
+    background: rgba(11, 92, 255, 0.25);
     border-radius: 100px;
   }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(29, 111, 232, 0.6); }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(11, 92, 255, 0.5); }
 
   /* ─── Selection ──────────────────────────────────────────────────────────── */
   ::selection {
-    background: rgba(29, 111, 232, 0.2);
-    color: hsl(229 100% 40%);
+    background: rgba(11, 92, 255, 0.15);
+    color: #0B5CFF;
   }
 }
 
@@ -92,33 +83,31 @@
 
   /* White Card */
   .glass-card {
-    @apply relative overflow-hidden rounded-xl;
+    @apply relative overflow-hidden rounded-lg;
     background: #ffffff;
-    border: 1px solid #1d6fe8;
-    box-shadow: 0 1px 4px rgba(30, 64, 175, 0.06), 0 4px 16px rgba(30, 64, 175, 0.04);
+    border: 1px solid #E5E7EB;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
   .glass-card:hover {
-    box-shadow: 0 2px 8px rgba(30, 64, 175, 0.10), 0 8px 24px rgba(30, 64, 175, 0.07);
-    border-color: #1d6fe8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: all 0.2s ease;
   }
 
-  /* Gradient Text — Blue to Gold */
+  /* Accent Text */
   .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(229 100% 60%), hsl(23 100% 60%));
+    color: #0B5CFF;
   }
 
-  /* Glow Button */
-  .btn-glow {
+  /* Zoom-style primary button */
+  .btn-primary {
     @apply relative overflow-hidden;
-    box-shadow: 0 4px 14px rgba(29, 111, 232, 0.3);
-    transition: box-shadow 0.2s ease, transform 0.15s ease;
+    background: #0B5CFF;
+    color: #ffffff;
+    transition: background 0.15s ease;
   }
-  .btn-glow:hover {
-    box-shadow: 0 6px 20px rgba(29, 111, 232, 0.45);
-    transform: translateY(-1px);
+  .btn-primary:hover {
+    background: #0A51E0;
   }
 
   /* Badges */
@@ -146,55 +135,61 @@
     border: 1px solid hsl(142 60% 40% / 0.25);
   }
 
-  /* ── Sidebar Item ── */
-  .sidebar-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200;
-    color: hsl(220 20% 45%);
+  /* ── Zoom-style Sidebar Nav Item ── */
+  .zoom-nav-item {
+    @apply flex items-center gap-3 text-sm font-medium transition-colors duration-150;
+    color: #374151;
+    padding: 10px 16px;
+    border-left: 3px solid transparent;
+    display: flex;
   }
 
-  .sidebar-item:hover {
-    color: hsl(23 100% 50%);
-    background: linear-gradient(135deg, rgba(255, 145, 77, 0.12), rgba(255, 145, 77, 0.06));
-    border-left: 3px solid hsl(23 100% 65%);
-    padding-left: calc(0.75rem - 3px);
+  .zoom-nav-item:hover {
+    color: #1F2937;
+    background: #F3F4F6;
+    border-left-color: transparent;
   }
 
-  .sidebar-item.active {
-    color: hsl(229 100% 60%);
-    background: linear-gradient(135deg, rgba(29, 111, 232, 0.12), rgba(29, 111, 232, 0.05));
-    border-left: 3px solid hsl(229 100% 66%);
-    padding-left: calc(0.75rem - 3px);
+  .zoom-nav-item.active {
+    color: #0B5CFF;
+    background: #EFF4FF;
+    border-left-color: #0B5CFF;
     font-weight: 600;
   }
 
+  /* Keep old sidebar-item for any legacy usage */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150;
+    color: #374151;
+  }
+  .sidebar-item:hover { background: #F3F4F6; color: #1F2937; }
+  .sidebar-item.active { background: #EFF4FF; color: #0B5CFF; font-weight: 600; }
+
   /* Stat Card */
   .stat-card {
-    @apply glass-card p-6 flex flex-col gap-2;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    @apply glass-card p-5 flex flex-col gap-2;
+    transition: box-shadow 0.2s ease;
   }
-  .stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 28px rgba(30, 64, 175, 0.12);
-  }
+  .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 
   /* Input */
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200;
+    @apply w-full px-3 py-2 rounded border text-sm transition-all duration-200;
     background: #ffffff;
-    border-color: hsl(220 20% 88%);
-    color: hsl(222 100% 13%);
+    border-color: #D1D5DB;
+    color: #1F2937;
     outline: none;
   }
-  .input-field::placeholder { color: hsl(220 15% 60%); }
+  .input-field::placeholder { color: #9CA3AF; }
   .input-field:focus {
-    border-color: hsl(229 100% 66%);
-    box-shadow: 0 0 0 3px rgba(29, 111, 232, 0.15);
+    border-color: #0B5CFF;
+    box-shadow: 0 0 0 2px rgba(11, 92, 255, 0.12);
   }
 
   /* Page */
-  .page-header { @apply flex items-center justify-between mb-8; }
-  .page-title  { @apply text-2xl font-bold; color: hsl(222 100% 13%); }
-  .page-description { @apply text-sm mt-1; color: hsl(220 15% 50%); }
+  .page-header { @apply flex items-center justify-between mb-6; }
+  .page-title  { @apply text-xl font-semibold; color: #1F2937; }
+  .page-description { @apply text-sm mt-0.5; color: #6B7280; }
 }
 
 /* ─── Utilities ─────────────────────────────────────────────────────────────── */
