@@ -780,9 +780,10 @@ export class AuthService {
     try {
       await this.auditService.log({
         action: 'INVITATION_ACCEPTED',
-        userId: user.id,
+        actorId: user.id,
+        resourceType: 'invitation',
+        resourceId: invitation.id,
         metadata: {
-          invitationId: invitation.id,
           invitedByEmail: invitation.invitedByEmail,
           role: invitation.roleSlug,
           ipAddress: ipAddress || null,

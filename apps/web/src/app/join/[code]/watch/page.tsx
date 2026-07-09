@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, use, useCallback } from 'react';
 import { webinarApi } from '@/lib/api';
-import { Room, RoomEvent, Track } from 'livekit-client';
 import { ChatTab } from '../room/components/ChatTab';
 import { PollsTab } from '../room/components/PollsTab';
 import { CTAPopup } from '../room/components/CTAPopup';
@@ -48,7 +47,7 @@ export default function WatchPage({
   const liveVideoRef    = useRef<HTMLVideoElement>(null);
   const hideTimer       = useRef<ReturnType<typeof setTimeout> | null>(null);
   const esRef           = useRef<EventSource | null>(null);
-  const takeoverRoomRef = useRef<Room | null>(null);
+  const takeoverRoomRef = useRef<null>(null); // kept for SSE cleanup only
   const syncEpochRef    = useRef<number>(Date.now() - startPos * 1000);
   const lastSyncRef     = useRef<number>(Date.now());
   const handTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -278,8 +277,7 @@ export default function WatchPage({
       void takeoverRoomRef.current?.disconnect();
     });
 
-    es.addEventListener('takeover_start', (e: MessageEvent) => {
-      JSON.parse(e.data); // parse but not needed for MediaSoup redirect
+    es.addEventListener('takeover_start', () => {
       setTakingOver(true);
       setShowReplayModal(false);
 
@@ -288,36 +286,10 @@ export default function WatchPage({
         videoRef.current.src = '';
       }
 
-      const room = new Room({ adaptiveStream: true });
-      takeoverRoomRef.current = room;
-
-      room.on(RoomEvent.TrackSubscribed, (track) => {
-        if (track.kind === Track.Kind.Video && liveVideoRef.current) {
-          track.attach(liveVideoRef.current);
-          liveVideoRef.current.play().catch(() => {});
-        }
-        if (track.kind === Track.Kind.Audio && liveVideoRef.current) {
-          track.attach(liveVideoRef.current);
-        }
-      });
-
-      room.on(RoomEvent.Connected, () => {
-        setIsTakenOver(true);
-        setTakingOver(false);
-        room.remoteParticipants.forEach((participant) => {
-          participant.trackPublications.forEach((pub) => {
-            if (pub.track?.kind === Track.Kind.Video && liveVideoRef.current) {
-              pub.track.attach(liveVideoRef.current);
-              liveVideoRef.current.play().catch(() => {});
-            }
-          });
-        });
-      });
-
+      // MediaSoup: get token and redirect to live room page
       webinarApi.getAttendeeToken(code, displayName)
         .then((data) => {
           if (data.mode === 'fully_live') {
-            // MediaSoup: redirect to room page for takeover
             const roomUrl = new URL(`/join/${code}/room`, window.location.origin);
             roomUrl.searchParams.set('roomId', data.roomId);
             roomUrl.searchParams.set('peerId', data.peerId);

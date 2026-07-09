@@ -228,7 +228,7 @@ export interface Webinar {
   replayUrl: string | null;
   videoUrl: string | null;
   timedEvents: Array<{ timeSeconds: number; type: string; data: Record<string, unknown> }>;
-  livekitRoom: string | null;
+  mediasoupRoomId: string | null;
   settings: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -329,7 +329,7 @@ export const webinarApi = {
     }),
 
   /** Join webinar — mode-aware.
-   *  fully_live → LiveKit token
+   *  fully_live → MediaSoup room credentials
    *  semi_live  → synchronized video data
    */
   getAttendeeToken: (

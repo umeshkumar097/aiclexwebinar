@@ -158,7 +158,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
   const [mutedSids, setMutedSids]         = useState<Set<string>>(new Set());
   const [raisedHands, setRaisedHands]     = useState<Set<string>>(new Set()); // F-032
 
-  // ── Load webinar + connect LiveKit / SSE ───────────────────────────────────
+  // ── Load webinar + connect MediaSoup / SSE ───────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -762,7 +762,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
       // Semi-Live: Broadcast chat via REST so all attendees receive it via SSE
       await webinarApi.sendChat(webinar.joinCode || '', 'Host', msg).catch(() => {});
     } else {
-      // Fully-Live: Broadcast via LiveKit Data Channel
+      // Fully-Live: Broadcast via MediaSoup Data Channel (future)
       const myMsg: ChatMessage = {
         id: Date.now().toString(),
         user: 'You (Host)',
