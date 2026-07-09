@@ -64,9 +64,8 @@ export interface AppConfig {
       useSsl: boolean;
     };
   };
-  livekit: {
-    url: string;
-    apiKey: string;
+  mediasoup: {
+    serverUrl: string;
     apiSecret: string;
   };
   turn: {
@@ -147,10 +146,9 @@ export const configuration = (): AppConfig => ({
       useSsl: process.env['MINIO_USE_SSL'] === 'true',
     },
   },
-  livekit: {
-    url: process.env['LIVEKIT_URL'] ?? 'ws://localhost:7880',
-    apiKey: process.env['LIVEKIT_API_KEY'] ?? 'devkey',
-    apiSecret: process.env['LIVEKIT_API_SECRET'] ?? 'devsecret',
+  mediasoup: {
+    serverUrl: process.env['MEDIASOUP_SERVER_URL'] ?? 'http://4.236.163.156:2000',
+    apiSecret: process.env['MEDIASOUP_API_SECRET'] ?? 'zonvo_mediasoup_secret_2024',
   },
   turn: {
     url: process.env['TURN_URL'] ?? '',

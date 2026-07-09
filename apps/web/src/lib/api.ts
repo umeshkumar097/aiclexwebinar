@@ -321,9 +321,9 @@ export const webinarApi = {
   delete: (id: string) =>
     request<void>(`/webinars/${id}`, { method: 'DELETE' }),
 
-  /** Get LiveKit token for host */
+  /** Get MediaSoup room credentials for host */
   getHostToken: (id: string, displayName: string) =>
-    request<{ token: string; livekitUrl: string }>(`/webinars/${id}/host-token`, {
+    request<{ roomId: string; peerId: string; role: 'host'; mediasoupServerUrl: string; mediasoupSecret: string }>(`/webinars/${id}/host-token`, {
       method: 'POST',
       body: JSON.stringify({ displayName }),
     }),
@@ -338,7 +338,7 @@ export const webinarApi = {
     password?: string,
   ) =>
     request<
-      | { mode: 'fully_live'; token: string; roomName: string; webinarTitle: string; livekitUrl: string; settings: Record<string, unknown> }
+      | { mode: 'fully_live'; roomId: string; peerId: string; mediasoupServerUrl: string; mediasoupSecret: string; webinarTitle: string; settings: Record<string, unknown> }
       | { mode: 'semi_live'; videoUrl: string; currentPositionSeconds: number; timedEvents: unknown[]; webinarTitle: string; webinarId: string; settings: Record<string, unknown> }
     >(`/webinars/join/${code}/token`, {
       method: 'POST',

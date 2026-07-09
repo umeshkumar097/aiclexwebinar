@@ -5,7 +5,26 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindManyOptions, ILike, Raw } from 'typeorm';
-import { AccessToken, EgressClient, EncodedFileOutput } from 'livekit-server-sdk';
+// ─── MediaSoup Server helper ──────────────────────────────────────────────────
+async function mediasoupFetch(path: string, method = 'GET', body?: unknown): Promise<any> {
+  const serverUrl = process.env.MEDIASOUP_SERVER_URL ?? 'http://4.236.163.156:2000';
+  const secret    = process.env.MEDIASOUP_API_SECRET ?? 'zonvo_mediasoup_secret_2024';
+
+  const res = await fetch(`${serverUrl}${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-mediasoup-secret': secret,
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`MediaSoup server error ${res.status}: ${text}`);
+  }
+  return res.json();
+}
 
 import { Webinar, WebinarStatus, WebinarMode } from './entities/webinar.entity';
 
@@ -134,41 +153,23 @@ export class WebinarsService {
     const webinar = await this.findOne(id, userId, orgId);
     webinar.status = WebinarStatus.LIVE;
     webinar.startedAt = new Date();
-    // Create a stable LiveKit room name from webinar ID
-    webinar.livekitRoom = `webinar-${id}`;
+    // Use webinar ID as the MediaSoup room ID
+    webinar.livekitRoom = `webinar-${id}`; // field reused as mediasoupRoom
 
-    // If enableRecording is set, mark recording as active in settings
     const settings = webinar.settings ?? {};
+
+    // Pre-warm the MediaSoup room (creates router on media VPS)
+    try {
+      await mediasoupFetch(`/api/rooms/webinar-${id}/rtp-capabilities`);
+      console.log(`[MediaSoup] Room webinar-${id} pre-warmed`);
+    } catch (err) {
+      console.error('[MediaSoup] Failed to pre-warm room:', err);
+    }
+
     if (settings.enableRecording) {
       settings.recordingStartedAt = new Date().toISOString();
       settings.recordingActive = true;
-      
-      try {
-        const egressClient = new EgressClient(
-          process.env.LIVEKIT_URL ?? 'wss://localhost:7880',
-          process.env.LIVEKIT_API_KEY ?? 'devkey',
-          process.env.LIVEKIT_API_SECRET ?? 'devsecret',
-        );
-        
-        const fileOutput = new EncodedFileOutput({
-          filepath: `recordings/${id}/{room_name}-{time}.mp4`,
-        });
-        
-        const info = await egressClient.startRoomCompositeEgress(
-          webinar.livekitRoom,
-          {
-            file: fileOutput,
-          },
-          {
-            layout: settings.enableWatermark ? 'watermark' : 'default',
-          }
-        );
-        
-        settings.egressId = info.egressId;
-      } catch (err) {
-        console.error('Failed to start LiveKit Egress recording:', err);
-      }
-
+      // Note: Full recording pipeline with MediaSoup requires FFmpeg egress (Phase 2 TODO)
       webinar.settings = settings;
     }
 
@@ -212,19 +213,15 @@ export class WebinarsService {
     webinar.endedAt = new Date();
 
     const settings = webinar.settings ?? {};
-    if (settings.egressId) {
-      try {
-        const egressClient = new EgressClient(
-          process.env.LIVEKIT_URL ?? 'wss://localhost:7880',
-          process.env.LIVEKIT_API_KEY ?? 'devkey',
-          process.env.LIVEKIT_API_SECRET ?? 'devsecret',
-        );
-        await egressClient.stopEgress(settings.egressId as string);
-        settings.recordingActive = false;
-        webinar.settings = settings;
-      } catch (err) {
-         console.error('Failed to stop egress:', err);
-      }
+    settings.recordingActive = false;
+    webinar.settings = settings;
+
+    // Destroy MediaSoup room to free resources
+    try {
+      await mediasoupFetch(`/api/rooms/webinar-${id}/close`, 'POST');
+      console.log(`[MediaSoup] Room webinar-${id} destroyed`);
+    } catch (err) {
+      console.error('[MediaSoup] Failed to destroy room:', err);
     }
 
     return this.webinarRepo.save(webinar);
@@ -251,34 +248,33 @@ export class WebinarsService {
     return { total, live, scheduled, draft };
   }
 
-  /** Generate a LiveKit token for the host to join the studio */
-  async generateHostToken(id: string, userId: string, orgId: string | null, displayName: string): Promise<string> {
-    const webinar = await this.findOne(id, userId, orgId);
+  /** Generate MediaSoup room credentials for the host */
+  async generateHostToken(id: string, userId: string, orgId: string | null, displayName: string): Promise<{
+    roomId: string;
+    peerId: string;
+    role: 'host';
+    mediasoupServerUrl: string;
+    mediasoupSecret: string;
+  }> {
+    await this.findOne(id, userId, orgId);
 
-    const apiKey = process.env.LIVEKIT_API_KEY ?? 'devkey';
-    const apiSecret = process.env.LIVEKIT_API_SECRET ?? 'devsecret';
-    const roomName = webinar.livekitRoom ?? `webinar-${id}`;
+    const roomId = `webinar-${id}`;
+    const peerId = `host-${userId}`;
+    const mediasoupServerUrl = process.env.MEDIASOUP_SERVER_URL ?? 'http://4.236.163.156:2000';
+    const mediasoupSecret   = process.env.MEDIASOUP_API_SECRET  ?? 'zonvo_mediasoup_secret_2024';
 
-    const at = new AccessToken(apiKey, apiSecret, {
-      identity: `host-${userId}`,
-      name: displayName,
-      ttl: '4h',
-    });
+    // Pre-warm room (idempotent)
+    try {
+      await mediasoupFetch(`/api/rooms/${roomId}/rtp-capabilities`);
+    } catch (err) {
+      console.error('[MediaSoup] Room pre-warm failed:', err);
+    }
 
-    at.addGrant({
-      roomJoin: true,
-      room: roomName,
-      canPublish: true,
-      canSubscribe: true,
-      canPublishData: true,
-      roomAdmin: true,
-    });
-
-    return await at.toJwt();
+    return { roomId, peerId, role: 'host', mediasoupServerUrl, mediasoupSecret };
   }
 
   /** Generate join data for an attendee.
-   *  - fully_live: returns LiveKit token
+   *  - fully_live: returns MediaSoup room credentials
    *  - semi_live : returns video URL + current position for synchronized playback
    */
   async generateAttendeeToken(
@@ -286,7 +282,7 @@ export class WebinarsService {
     displayName: string,
     password?: string,
   ): Promise<
-    | { mode: 'fully_live'; token: string; roomName: string; webinarTitle: string; livekitUrl: string; settings: any }
+    | { mode: 'fully_live'; roomId: string; peerId: string; mediasoupServerUrl: string; mediasoupSecret: string; webinarTitle: string; settings: any }
     | { mode: 'semi_live'; videoUrl: string; currentPositionSeconds: number; timedEvents: unknown[]; webinarTitle: string; webinarId: string; settings: any }
   > {
     const webinar = await this.findByJoinCode(joinCode);
@@ -316,28 +312,19 @@ export class WebinarsService {
       };
     }
 
-    // ── Fully-Live: LiveKit token ───────────────────────────────────────────
-    const apiKey    = process.env.LIVEKIT_API_KEY    ?? 'devkey';
-    const apiSecret = process.env.LIVEKIT_API_SECRET ?? 'devsecret';
-    const roomName  = webinar.livekitRoom ?? `webinar-${webinar.id}`;
-    const livekitUrl = process.env.LIVEKIT_URL ?? 'wss://localhost:7880';
-
-    const identity = `attendee-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    const at = new AccessToken(apiKey, apiSecret, { identity, name: displayName, ttl: '4h' });
-    at.addGrant({
-      roomJoin: true,
-      room: roomName,
-      canPublish: false,
-      canSubscribe: true,
-      canPublishData: true,
-    });
+    // ── Fully-Live: MediaSoup credentials ──────────────────────────────────
+    const roomId  = webinar.livekitRoom ?? `webinar-${webinar.id}`;
+    const peerId  = `attendee-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const mediasoupServerUrl = process.env.MEDIASOUP_SERVER_URL ?? 'http://4.236.163.156:2000';
+    const mediasoupSecret    = process.env.MEDIASOUP_API_SECRET  ?? 'zonvo_mediasoup_secret_2024';
 
     return {
       mode: 'fully_live' as const,
-      token: await at.toJwt(),
-      roomName,
+      roomId,
+      peerId,
+      mediasoupServerUrl,
+      mediasoupSecret,
       webinarTitle: webinar.title,
-      livekitUrl,
       settings: webinar.settings ?? {},
     };
   }
@@ -479,39 +466,12 @@ export class WebinarsService {
     return webinar;
   }
 
-  // ── Task 4: Handle LiveKit Egress webhook ─────────────────────────────────
-  async handleLivekitWebhook(body: any, headers: any): Promise<{ ok: boolean }> {
+  // ── Get MediaSoup room info (for debugging) ────────────────────────────────
+  async getMediasoupRoomInfo(id: string): Promise<any> {
     try {
-      // LiveKit sends EgressUpdated event with status EGRESS_COMPLETE
-      if (body.event === 'egress_updated' || body.event === 'egress_ended') {
-        const egress = body.egressInfo;
-        if (!egress) return { ok: true };
-
-        // Find webinar by egressId stored in settings
-        const webinars = await this.webinarRepo.find();
-        const webinar = webinars.find((w) => w.settings?.egressId === egress.egressId);
-
-        if (webinar && egress.status === 'EGRESS_COMPLETE') {
-          // Get the file URL from egress info
-          const fileResults = egress.fileResults || [];
-          if (fileResults.length > 0) {
-            const fileUrl = fileResults[0].downloadUrl || fileResults[0].location;
-            if (fileUrl) {
-              webinar.replayUrl = fileUrl;
-              webinar.settings = {
-                ...webinar.settings,
-                recordingActive: false,
-                recordingUrl: fileUrl,
-              };
-              await this.webinarRepo.save(webinar);
-            }
-          }
-        }
-      }
-      return { ok: true };
-    } catch (err) {
-      console.error('LiveKit webhook error:', err);
-      return { ok: true }; // Always return 200 to LiveKit
+      return await mediasoupFetch(`/api/rooms/webinar-${id}/rtp-capabilities`);
+    } catch {
+      return null;
     }
   }
 

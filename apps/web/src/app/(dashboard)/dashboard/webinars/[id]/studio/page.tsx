@@ -4,18 +4,10 @@ import { useState, useEffect, useRef, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Room,
-  RoomEvent,
-  LocalVideoTrack,
-  LocalAudioTrack,
-  createLocalVideoTrack,
-  createLocalAudioTrack,
-  createLocalScreenTracks,
-  Track,
-} from 'livekit-client';
-import { webinarApi, type Webinar } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { webinarApi, type Webinar } from '@/lib/api';
+import { Device } from 'mediasoup-client';
+import type { Transport, Producer } from 'mediasoup-client/lib/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDuration(seconds: number) {
@@ -78,18 +70,23 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
   void connectionError; // Mark as read
 
 
-  // Refs for tracking streams
-  const roomRef = useRef<Room | null>(null);
+  // Refs for tracking streams — MediaSoup
+  const deviceRef    = useRef<Device | null>(null);
+  const sendTransportRef = useRef<Transport | null>(null);
+  const videoProducerRef = useRef<Producer | null>(null);
+  const audioProducerRef = useRef<Producer | null>(null);
+  const screenProducerRef = useRef<Producer | null>(null);
+  const mediasoupRoomIdRef  = useRef<string>('');
+  const mediasoupPeerIdRef  = useRef<string>('');
+  const mediasoupUrlRef     = useRef<string>('');
+  const mediasoupSecretRef  = useRef<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const cameraRef = useRef<HTMLVideoElement>(null); // PiP camera for semi-live takeover
-  const pipCameraRef = useRef<HTMLVideoElement>(null); // Camera PiP when screen sharing
-  const localVideoTrackRef = useRef<LocalVideoTrack | null>(null);
-  const localAudioTrackRef = useRef<LocalAudioTrack | null>(null);
-  const screenTrackRef = useRef<LocalVideoTrack | null>(null); // screen share track
+  const cameraRef = useRef<HTMLVideoElement>(null);
+  const pipCameraRef = useRef<HTMLVideoElement>(null);
   const localFallbackStreamRef = useRef<MediaStream | null>(null);
-  const semiStreamRef = useRef<MediaStream | null>(null); // Camera stream for semi-live mode
+  const semiStreamRef = useRef<MediaStream | null>(null);
   const esRef = useRef<EventSource | null>(null);
-  const screenVideoRef = useRef<HTMLVideoElement>(null); // screen share preview
+  const screenVideoRef = useRef<HTMLVideoElement>(null);
 
   // Controls & Panels
   const [cameraOn, setCameraOn] = useState(true);
@@ -102,9 +99,10 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
   // Full takeover states (semi-live → fully live)
   const [showTakeoverModal, setShowTakeoverModal] = useState(false);
-  const [semiTakeover, setSemiTakeover] = useState(false);  // true = host went fully live
+  const [semiTakeover, setSemiTakeover] = useState(false);
   const [takeoverConnecting, setTakeoverConnecting] = useState(false);
-  const takeoverRoomRef = useRef<Room | null>(null);
+  const takeoverDeviceRef = useRef<Device | null>(null);
+  const takeoverSendTransportRef = useRef<Transport | null>(null);
 
   // Live stats
   const [elapsed, setElapsed] = useState(0);
@@ -221,85 +219,97 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
           setPageLoading(false);
 
         } else {
-          // ── Fully-Live: Connect via LiveKit WebRTC ──
+          // ── Fully-Live: Connect via MediaSoup WebRTC ──
           setConnectionState('connecting');
           const displayName = user?.email?.split('@')[0] ?? 'Host';
-          const { token, livekitUrl } = await webinarApi.getHostToken(id, displayName);
+          const creds = await webinarApi.getHostToken(id, displayName);
 
-          const room = new Room({
-            adaptiveStream: true,
-            dynacast: true,
-            // F-025: automatic reconnection
-            reconnectPolicy: { nextRetryDelayInMs: (ctx) => Math.min(ctx.retryCount * 1000, 10000) },
-          });
-          roomRef.current = room;
+          mediasoupRoomIdRef.current  = creds.roomId;
+          mediasoupPeerIdRef.current  = creds.peerId;
+          mediasoupUrlRef.current     = creds.mediasoupServerUrl;
+          mediasoupSecretRef.current  = creds.mediasoupSecret;
 
-          const syncViewers = () => {
-            const list = Array.from(room.remoteParticipants.values()).map((p) => ({
-              sid: p.sid,
-              name: p.name ?? p.identity ?? 'Attendee',
-              joinedAt: new Date(),
-            }));
-            setViewers(list);
-            setParticipantCount(list.length);
-          };
+          // ── Get RTP capabilities from MediaSoup server ──
+          const capsRes = await fetch(
+            `${creds.mediasoupServerUrl}/api/rooms/${creds.roomId}/rtp-capabilities`,
+            { headers: { 'x-mediasoup-secret': creds.mediasoupSecret } },
+          );
+          const { rtpCapabilities } = await capsRes.json();
 
-          room.on(RoomEvent.ParticipantConnected, syncViewers);
-          room.on(RoomEvent.ParticipantDisconnected, syncViewers);
-          room.on(RoomEvent.DataReceived, (data) => {
+          // ── Load mediasoup Device ──
+          const device = new Device();
+          await device.load({ routerRtpCapabilities: rtpCapabilities });
+          deviceRef.current = device;
+
+          // ── Create send transport ──
+          const tRes = await fetch(
+            `${creds.mediasoupServerUrl}/api/rooms/${creds.roomId}/transports`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-mediasoup-secret': creds.mediasoupSecret },
+              body: JSON.stringify({ peerId: creds.peerId, direction: 'send', role: 'host' }),
+            },
+          );
+          const tData = await tRes.json();
+
+          const sendTransport = device.createSendTransport(tData);
+          sendTransportRef.current = sendTransport;
+
+          sendTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
             try {
-              const ev = JSON.parse(new TextDecoder().decode(data)) as {
-                type?: string; user?: string; message?: string;
-                raised?: boolean; emoji?: string;
-              };
-              if (ev.type === 'message' || (!ev.type && ev.message)) {
-                // Chat message from attendee
-                setMessages((prev) => [
-                  ...prev.slice(-49),
-                  { id: Date.now().toString(), user: ev.user ?? 'Attendee', avatar: (ev.user ?? 'At').substring(0, 2).toUpperCase(), message: ev.message ?? '', time: new Date() },
-                ]);
-              } else if (ev.type === 'raise_hand') {
-                // F-032: Track raised hands by participant name
-                setRaisedHands((prev) => {
-                  const next = new Set(prev);
-                  ev.raised ? next.add(ev.user ?? '') : next.delete(ev.user ?? '');
-                  return next;
-                });
-                // Auto-clear after 35s if host doesn't see it
-                if (ev.raised) {
-                  setTimeout(() => setRaisedHands((prev) => { const n = new Set(prev); n.delete(ev.user ?? ''); return n; }), 35000);
-                }
-              } else if (ev.type === 'reaction') {
-                // Reactions are for broadcast, no UI needed in studio
-              }
-            } catch { /* ignore */ }
+              await fetch(
+                `${creds.mediasoupServerUrl}/api/rooms/${creds.roomId}/transports/${sendTransport.id}/connect`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-mediasoup-secret': creds.mediasoupSecret },
+                  body: JSON.stringify({ dtlsParameters }),
+                },
+              );
+              callback();
+            } catch (err) { errback(err as Error); }
           });
-          room.on(RoomEvent.Disconnected, () => setConnectionState('idle'));
-          room.on(RoomEvent.Reconnecting, () => setConnectionState('connecting'));
-          room.on(RoomEvent.Reconnected, () => setConnectionState('connected'));
 
-          await room.connect(livekitUrl, token);
-          if (cancelled) { await room.disconnect(); return; }
+          sendTransport.on('produce', async ({ kind, rtpParameters, appData }, callback, errback) => {
+            try {
+              const pRes = await fetch(
+                `${creds.mediasoupServerUrl}/api/rooms/${creds.roomId}/transports/${sendTransport.id}/produce`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-mediasoup-secret': creds.mediasoupSecret },
+                  body: JSON.stringify({ peerId: creds.peerId, kind, rtpParameters, appData }),
+                },
+              );
+              const { id: producerId } = await pRes.json();
+              callback({ id: producerId });
+            } catch (err) { errback(err as Error); }
+          });
+
+          // ── Capture camera + mic ──
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 1280, height: 720 },
+            audio: { noiseSuppression: true, echoCancellation: true },
+          });
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.muted = true;
+          }
+
+          // ── Produce video ──
+          const videoTrack = stream.getVideoTracks()[0];
+          if (videoTrack) {
+            const vProducer = await sendTransport.produce({ track: videoTrack });
+            videoProducerRef.current = vProducer;
+          }
+
+          // ── Produce audio ──
+          const audioTrack = stream.getAudioTracks()[0];
+          if (audioTrack) {
+            const aProducer = await sendTransport.produce({ track: audioTrack });
+            audioProducerRef.current = aProducer;
+          }
 
           setConnectionState('connected');
-          setParticipantCount(room.remoteParticipants.size);
-          setViewers(Array.from(room.remoteParticipants.values()).map((p) => ({
-            sid: p.sid,
-            name: p.name ?? p.identity ?? 'Attendee',
-            joinedAt: new Date(),
-          })));
-
-          // F-022: Publish with noise + echo cancellation enabled
-          const [videoTrack, audioTrack] = await Promise.all([
-            createLocalVideoTrack({ resolution: { width: 1280, height: 720 } }),
-            createLocalAudioTrack({ noiseSuppression: true, echoCancellation: true }),
-          ]);
-
-          localVideoTrackRef.current = videoTrack;
-          localAudioTrackRef.current = audioTrack;
-
-          await room.localParticipant.publishTrack(videoTrack);
-          await room.localParticipant.publishTrack(audioTrack);
           setPageLoading(false);
         }
 
@@ -322,9 +332,11 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
     return () => {
       cancelled = true;
-      localVideoTrackRef.current?.stop();
-      localAudioTrackRef.current?.stop();
-      void roomRef.current?.disconnect();
+      // Close MediaSoup producers
+      videoProducerRef.current?.close();
+      audioProducerRef.current?.close();
+      screenProducerRef.current?.close();
+      sendTransportRef.current?.close();
       esRef.current?.close();
     };
   }, [id, router, user]);
@@ -393,35 +405,23 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
     }
   }, [elapsed, webinar, pageLoading]);
 
-  // ── Bind camera tracks for Fully-Live ──────────────────────────────────────
+  // ── Bind camera stream for Fully-Live (MediaSoup — srcObject already set in init) ──
   useEffect(() => {
     if (pageLoading || webinar?.mode === 'semi_live') return;
-
     const videoElement = videoRef.current;
     if (!videoElement) return;
-
-    if (localVideoTrackRef.current) {
-      if (cameraOn) {
-        localVideoTrackRef.current.attach(videoElement);
-        videoElement.play().catch(() => {});
-      } else {
-        localVideoTrackRef.current.detach(videoElement);
-      }
+    // Stream is attached directly in init via getUserMedia, just toggle visibility
+    if (videoElement.srcObject) {
+      const stream = videoElement.srcObject as MediaStream;
+      stream.getVideoTracks().forEach((t) => { t.enabled = cameraOn; });
     } else if (localFallbackStreamRef.current) {
       if (cameraOn) {
         videoElement.srcObject = localFallbackStreamRef.current;
         videoElement.play().catch(() => {});
       } else {
-        videoElement.srcObject = null;
+        localFallbackStreamRef.current.getVideoTracks().forEach((t) => { t.enabled = false; });
       }
     }
-
-    return () => {
-      if (videoElement) {
-        if (localVideoTrackRef.current) localVideoTrackRef.current.detach(videoElement);
-        videoElement.srcObject = null;
-      }
-    };
   }, [pageLoading, cameraOn, connectionState, webinar]);
 
   // ── Semi-Live PiP camera takeover ──────────────────────────────────────────
@@ -455,29 +455,22 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Screen share: attach track AFTER React mounts the video element ──────────
-  // We CANNOT attach inside the async handler because the <video ref={screenVideoRef}>
-  // element is conditional — React hasn't re-rendered yet when setScreenSharing(true) is called.
+  // ── Screen share: show preview when screenSharing=true ───────────────────────
   useEffect(() => {
-    if (!screenSharing || !screenVideoRef.current || !screenTrackRef.current) return;
-    const el = screenVideoRef.current;
-    screenTrackRef.current.attach(el);
-    el.play().catch(() => {});
-    return () => {
-      screenTrackRef.current?.detach(el);
-    };
+    if (!screenSharing || !screenVideoRef.current) return;
+    // screenProducerRef track is the display stream — already attached in handleScreenShare
   }, [screenSharing]);
 
-  // ── Camera PiP during screen share: attach camera track to pipCameraRef ──────
+  // ── Camera PiP during screen share ────────────────────────────────────────
   useEffect(() => {
     if (!screenSharing || !cameraOn || !pipCameraRef.current) return;
     const el = pipCameraRef.current;
-    if (localVideoTrackRef.current) {
-      localVideoTrackRef.current.attach(el);
+    // Use the main video stream for PiP
+    if (videoRef.current?.srcObject) {
+      el.srcObject = videoRef.current.srcObject;
       el.play().catch(() => {});
-      return () => { localVideoTrackRef.current?.detach(el); };
+      return () => { el.srcObject = null; };
     }
-    // Fallback: use localFallbackStreamRef
     if (localFallbackStreamRef.current) {
       el.srcObject = localFallbackStreamRef.current;
       el.play().catch(() => {});
@@ -485,60 +478,95 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
     }
   }, [screenSharing, cameraOn]);
 
-  // ── Mic/Camera toggles ─────────────────────────────────────────────────────
+  // ── Mic/Camera toggles (MediaSoup: pause/resume producers) ───────────────
   const toggleMic = useCallback(async () => {
-    if (roomRef.current) {
-      await roomRef.current.localParticipant.setMicrophoneEnabled(!micOn);
-    } else if (localAudioTrackRef.current) {
-      micOn ? localAudioTrackRef.current.mute() : localAudioTrackRef.current.unmute();
+    const newState = !micOn;
+    if (audioProducerRef.current) {
+      newState ? audioProducerRef.current.resume() : audioProducerRef.current.pause();
+    } else if (videoRef.current?.srcObject) {
+      (videoRef.current.srcObject as MediaStream).getAudioTracks().forEach((t) => { t.enabled = newState; });
     }
-    setMicOn((v) => !v);
+    setMicOn(newState);
   }, [micOn]);
 
   const toggleCamera = useCallback(async () => {
-    if (roomRef.current) {
-      await roomRef.current.localParticipant.setCameraEnabled(!cameraOn);
-    } else if (localVideoTrackRef.current) {
-      cameraOn ? localVideoTrackRef.current.mute() : localVideoTrackRef.current.unmute();
+    const newState = !cameraOn;
+    if (videoProducerRef.current) {
+      newState ? videoProducerRef.current.resume() : videoProducerRef.current.pause();
     }
-    setCameraOn((v) => !v);
+    setCameraOn(newState);
   }, [cameraOn]);
 
-  // ── Go Live Takeover ─────────────────────────────────────────────────────────
+  // ── Go Live Takeover (semi_live → fully_live via MediaSoup) ─────────────────
   const handleGoLiveTakeover = useCallback(async () => {
     if (!webinar || takeoverConnecting) return;
     setTakeoverConnecting(true);
     setShowTakeoverModal(false);
     try {
       const displayName = user?.email?.split('@')[0] ?? 'Host';
-      const { token, livekitUrl } = await webinarApi.getHostToken(id, displayName);
+      const creds = await webinarApi.getHostToken(id, displayName);
 
-      const room = new Room({ adaptiveStream: true, dynacast: true });
-      takeoverRoomRef.current = room;
-      await room.connect(livekitUrl, token);
+      // Load MediaSoup device
+      const capsRes = await fetch(
+        `${creds.mediasoupServerUrl}/api/rooms/${creds.roomId}/rtp-capabilities`,
+        { headers: { 'x-mediasoup-secret': creds.mediasoupSecret } },
+      );
+      const { rtpCapabilities } = await capsRes.json();
+      const device = new Device();
+      await device.load({ routerRtpCapabilities: rtpCapabilities });
+      takeoverDeviceRef.current = device;
 
-      // Enable camera + mic
-      await room.localParticipant.setCameraEnabled(true);
-      await room.localParticipant.setMicrophoneEnabled(true);
+      // Create send transport
+      const tRes = await fetch(
+        `${creds.mediasoupServerUrl}/api/rooms/${creds.roomId}/transports`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-mediasoup-secret': creds.mediasoupSecret },
+          body: JSON.stringify({ peerId: creds.peerId, direction: 'send', role: 'host' }),
+        },
+      );
+      const tData = await tRes.json();
+      const sendTransport = device.createSendTransport(tData);
+      takeoverSendTransportRef.current = sendTransport;
 
-      // Attach camera to main video element
-      const camTrackPub = Array.from(room.localParticipant.videoTrackPublications.values())[0];
-      if (camTrackPub?.track && videoRef.current) {
-        camTrackPub.track.attach(videoRef.current);
-        videoRef.current.play().catch(() => {});
-      }
+      sendTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        try {
+          await fetch(
+            `${creds.mediasoupServerUrl}/api/rooms/${creds.roomId}/transports/${sendTransport.id}/connect`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-mediasoup-secret': creds.mediasoupSecret }, body: JSON.stringify({ dtlsParameters }) },
+          );
+          callback();
+        } catch (err) { errback(err as Error); }
+      });
 
-      // Stop pre-recorded video
+      sendTransport.on('produce', async ({ kind, rtpParameters, appData }, callback, errback) => {
+        try {
+          const pRes = await fetch(
+            `${creds.mediasoupServerUrl}/api/rooms/${creds.roomId}/transports/${sendTransport.id}/produce`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-mediasoup-secret': creds.mediasoupSecret }, body: JSON.stringify({ peerId: creds.peerId, kind, rtpParameters, appData }) },
+          );
+          const { id: producerId } = await pRes.json();
+          callback({ id: producerId });
+        } catch (err) { errback(err as Error); }
+      });
+
+      // Capture camera for takeover
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       if (videoRef.current) {
         videoRef.current.pause();
-        videoRef.current.srcObject = null;
         videoRef.current.src = '';
+        videoRef.current.srcObject = stream;
+        videoRef.current.muted = true;
+        videoRef.current.play().catch(() => {});
       }
+      const vTrack = stream.getVideoTracks()[0];
+      if (vTrack) await sendTransport.produce({ track: vTrack });
+      const aTrack = stream.getAudioTracks()[0];
+      if (aTrack) await sendTransport.produce({ track: aTrack });
 
-      // Broadcast takeover_start to all attendees
       await webinarApi.broadcast(webinar.id, 'takeover_start', {
-        livekitUrl,
-        roomName: webinar.joinCode ?? id,
+        roomId: creds.roomId,
+        mediasoupServerUrl: creds.mediasoupServerUrl,
         message: 'Host is now live!',
       });
 
@@ -552,9 +580,9 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
     }
   }, [webinar, id, user, takeoverConnecting]);
 
-  // ── Cleanup takeover room on unmount ──────────────────────────────────────
+  // ── Cleanup takeover transport on unmount ────────────────────────────────
   useEffect(() => {
-    return () => { void takeoverRoomRef.current?.disconnect(); };
+    return () => { takeoverSendTransportRef.current?.close(); };
   }, []);
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -575,36 +603,27 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
   const switchCamera = useCallback(async (deviceId: string) => {
     setSelectedCamera(deviceId);
-    if (!roomRef.current) return;
+    if (!sendTransportRef.current || !deviceRef.current) return;
     try {
-      // Stop current video track
-      localVideoTrackRef.current?.stop();
-      // Create new track with selected device
-      const track = await createLocalVideoTrack({
-        deviceId,
-        resolution: { width: 1280, height: 720 },
-      });
-      localVideoTrackRef.current = track;
-      await roomRef.current.localParticipant.publishTrack(track);
-      if (videoRef.current) {
-        track.attach(videoRef.current);
-        videoRef.current.play().catch(() => {});
+      const newStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId } });
+      const newTrack = newStream.getVideoTracks()[0];
+      if (videoProducerRef.current && newTrack) {
+        await videoProducerRef.current.replaceTrack({ track: newTrack });
+        if (videoRef.current) {
+          videoRef.current.srcObject = newStream;
+          videoRef.current.play().catch(() => {});
+        }
       }
     } catch (err) { console.error('Switch camera failed', err); }
   }, []);
 
   const switchMic = useCallback(async (deviceId: string) => {
     setSelectedMic(deviceId);
-    if (!roomRef.current) return;
+    if (!audioProducerRef.current) return;
     try {
-      localAudioTrackRef.current?.stop();
-      const track = await createLocalAudioTrack({
-        deviceId,
-        noiseSuppression: true,
-        echoCancellation: true,
-      });
-      localAudioTrackRef.current = track;
-      await roomRef.current.localParticipant.publishTrack(track);
+      const newStream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId } });
+      const newTrack = newStream.getAudioTracks()[0];
+      await audioProducerRef.current.replaceTrack({ track: newTrack });
     } catch (err) { console.error('Switch mic failed', err); }
   }, []);
 

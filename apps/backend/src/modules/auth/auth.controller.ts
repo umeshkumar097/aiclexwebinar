@@ -214,10 +214,18 @@ export class AuthController {
   @ApiOperation({ summary: 'Accept an invitation and login' })
   async acceptInvite(
     @Body('token') token: string,
-    @Body('password') password?: string,
+    @Body('password') password: string | undefined,
+    @Body('agreementVersion') agreementVersion: string | undefined,
+    @Req() req: FastifyRequest,
   ) {
     if (!token) throw new BadRequestException('Token is required');
-    const tokens = await this.authService.acceptInvite(token, password);
+    const tokens = await this.authService.acceptInvite(
+      token,
+      password,
+      req.ip,
+      req.headers['user-agent'],
+      agreementVersion || '1.0',
+    );
     return tokens;
   }
 

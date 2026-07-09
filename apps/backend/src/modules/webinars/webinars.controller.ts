@@ -308,7 +308,7 @@ export class WebinarsController {
   }
 
 
-  // POST /api/v1/webinars/:id/host-token  (LiveKit JWT for host)
+  // POST /api/v1/webinars/:id/host-token  (MediaSoup room credentials for host)
   @Post(':id/host-token')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -317,14 +317,13 @@ export class WebinarsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: { displayName?: string },
   ) {
-    const token = await this.webinarsService.generateHostToken(
+    const data = await this.webinarsService.generateHostToken(
       id,
       user.userId,
       user.orgId ?? null,
       body.displayName ?? 'Host',
     );
-    const livekitUrl = process.env.LIVEKIT_URL ?? 'wss://localhost:7880';
-    return { success: true, data: { token, livekitUrl } };
+    return { success: true, data };
   }
 
   // DELETE /api/v1/webinars/:id
@@ -583,15 +582,7 @@ export class WebinarsController {
     return { success: true, data: webinar };
   }
 
-  // ── LiveKit Egress webhook (no auth — called by LiveKit cloud) ────────────
-  @Post('webhook/livekit')
-  @HttpCode(200)
-  async livekitWebhook(
-    @Body() body: Record<string, unknown>,
-    @Headers() headers: Record<string, string>,
-  ) {
-    return this.webinarsService.handleLivekitWebhook(body, headers);
-  }
 }
+
 
 

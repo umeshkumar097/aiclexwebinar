@@ -680,27 +680,57 @@ export class AuthService {
       throw new NotFoundException('Invitation not found, expired, or already accepted');
     }
 
+    if (invitation.expiresAt < new Date()) {
+      throw new NotFoundException('This invitation has expired.');
+    }
+
     const user = await this.userRepository.findOne({ where: { email: invitation.email } });
+
+    // Try to get inviter name
+    const inviter = await this.userRepository.findOne({ where: { email: invitation.invitedByEmail } });
+    let invitedByName = invitation.invitedByEmail;
+    if (inviter) {
+      const inviterProfile = await this.profileRepository.findOne({ where: { userId: inviter.id } });
+      if (inviterProfile) {
+        invitedByName = `${inviterProfile.firstName}${inviterProfile.lastName ? ' ' + inviterProfile.lastName : ''}`;
+      }
+    }
+
     return {
       email: invitation.email,
       firstName: invitation.firstName,
+      lastName: invitation.lastName,
       invitedByEmail: invitation.invitedByEmail,
+      invitedByName,
+      role: invitation.roleSlug,
+      invitedAt: invitation.createdAt,
+      expiresAt: invitation.expiresAt,
       userExists: !!user,
     };
   }
 
-  async acceptInvite(token: string, password?: string) {
+  async acceptInvite(
+    token: string,
+    password?: string,
+    ipAddress?: string,
+    userAgent?: string,
+    agreementVersion = '1.0',
+  ) {
     const invitation = await this.invitationRepository.findOne({ where: { token } });
     if (!invitation || invitation.status !== InvitationStatus.PENDING) {
       throw new NotFoundException('Invitation not found, expired, or already accepted');
     }
 
+    if (invitation.expiresAt < new Date()) {
+      throw new NotFoundException('This invitation has expired.');
+    }
+
     let user = await this.userRepository.findOne({ where: { email: invitation.email } });
-    
+
     // Create user if not exists
     if (!user) {
       if (!password) throw new BadRequestException('Password is required for new users');
-      
+
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
@@ -741,10 +771,29 @@ export class AuthService {
       await this.adminService.assignLicense(user.id, invitation.licenseId);
     }
 
-    // Update invitation status
+    // Update invitation status with audit data
     invitation.status = InvitationStatus.ACCEPTED;
     invitation.acceptedAt = new Date();
     await this.invitationRepository.save(invitation);
+
+    // Create audit log
+    try {
+      await this.auditService.log({
+        action: 'INVITATION_ACCEPTED',
+        userId: user.id,
+        metadata: {
+          invitationId: invitation.id,
+          invitedByEmail: invitation.invitedByEmail,
+          role: invitation.roleSlug,
+          ipAddress: ipAddress || null,
+          userAgent: userAgent || null,
+          agreementVersion,
+          acceptedAt: new Date().toISOString(),
+        },
+      });
+    } catch (_e) {
+      // Audit failure should not block login
+    }
 
     // Generate tokens for auto-login
     const { roles, permissions } = await this.getUserRolesAndPermissions(user.id);
