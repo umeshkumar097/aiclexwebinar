@@ -47,7 +47,7 @@ export default function WatchPage({
   const liveVideoRef    = useRef<HTMLVideoElement>(null);
   const hideTimer       = useRef<ReturnType<typeof setTimeout> | null>(null);
   const esRef           = useRef<EventSource | null>(null);
-  const takeoverRoomRef = useRef<null>(null); // kept for SSE cleanup only
+  // takeoverRoomRef removed (MediaSoup uses page redirect, no disconnect needed)
   const syncEpochRef    = useRef<number>(Date.now() - startPos * 1000);
   const lastSyncRef     = useRef<number>(Date.now());
   const handTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -139,7 +139,7 @@ export default function WatchPage({
 
   useEffect(() => {
     return () => {
-      void takeoverRoomRef.current?.disconnect();
+      // MediaSoup: no room disconnect needed (redirect-based takeover)
       if (handTimerRef.current) clearTimeout(handTimerRef.current);
       if (annTimerRef.current) clearTimeout(annTimerRef.current);
     };
@@ -274,7 +274,7 @@ export default function WatchPage({
       setSessionEnded(true);
       setShowReplayModal(false);
       if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ''; }
-      void takeoverRoomRef.current?.disconnect();
+      // MediaSoup: no room to disconnect
     });
 
     es.addEventListener('takeover_start', () => {
@@ -304,7 +304,7 @@ export default function WatchPage({
 
     es.addEventListener('takeover_end', (e: MessageEvent) => {
       const d = JSON.parse(e.data) as { epochMs: number; videoUrl: string };
-      void takeoverRoomRef.current?.disconnect();
+      // MediaSoup: no room to disconnect on takeover_end
       setIsTakenOver(false);
       setTakingOver(false);
       applySyncCorrection(d.epochMs);
