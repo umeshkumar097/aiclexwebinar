@@ -372,6 +372,7 @@ export default function AttendeeRoomPage({
                   : new MediaStream();
                 stream.addTrack(consumer.track);
                 videoRef.current.srcObject = stream;
+                videoRef.current.play().catch(() => {});
                 setHostOnline(true);
               } else if (consumer.kind === 'audio' && audioRef.current) {
                 const stream = audioRef.current.srcObject instanceof MediaStream
@@ -636,6 +637,7 @@ export default function AttendeeRoomPage({
             ref={videoRef}
             autoPlay
             playsInline
+            muted
             className={`w-full h-full object-cover transition-opacity duration-300 ${hostOnline ? 'opacity-100' : 'opacity-0 absolute'}`}
           />
 
