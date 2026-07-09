@@ -181,38 +181,37 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
         const es = webinarApi.openEventStream(w.joinCode || '', 'Host');
         esRef.current = es;
 
-        es.addEventListener('connected', () => {
-          if (w.mode === 'semi_live') {
-            setConnectionState('connected');
-          }
-        });
+        es.addEventListener('message', (e) => {
+          try {
+            const ev = JSON.parse(e.data as string);
+            if (ev.type === 'connected') {
+              if (w.mode === 'semi_live') {
+                setConnectionState('connected');
+              }
+            } else if (ev.type === 'viewer_count') {
+              setParticipantCount(ev.count);
+            } else if (ev.type === 'message') {
+              // Filter out vote messages from general chat
+              if (ev.message.startsWith('__vote__')) {
+                try {
+                  const vote = JSON.parse(ev.message.replace('__vote__', '')) as { pollId: string; optionId: string };
+                  // Handle live poll result updates on Host control panel
+                  console.log('Received vote:', vote);
+                } catch {}
+                return;
+              }
 
-        es.addEventListener('viewer_count', (e: MessageEvent) => {
-          const d = JSON.parse(e.data) as { count: number };
-          setParticipantCount(d.count);
-        });
-
-        es.addEventListener('chat', (e: MessageEvent) => {
-          const d = JSON.parse(e.data) as { user: string; message: string; time: string };
-          // Filter out vote messages from general chat
-          if (d.message.startsWith('__vote__')) {
-            try {
-              const vote = JSON.parse(d.message.replace('__vote__', '')) as { pollId: string; optionId: string };
-              // Handle live poll result updates on Host control panel
-              console.log('Received vote:', vote);
-            } catch {}
-            return;
-          }
-
-          const msg: ChatMessage = {
-            id: `${Date.now()}-${Math.random()}`,
-            user: d.user,
-            avatar: d.user.substring(0, 2).toUpperCase(),
-            message: d.message,
-            time: new Date(d.time),
-            isHost: d.user.toLowerCase().includes('host'),
-          };
-          setMessages((prev) => [...prev.slice(-49), msg]);
+              const msg: ChatMessage = {
+                id: `${Date.now()}-${Math.random()}`,
+                user: ev.user,
+                avatar: ev.user.substring(0, 2).toUpperCase(),
+                message: ev.message,
+                time: new Date(ev.time),
+                isHost: ev.user.toLowerCase().includes('host'),
+              };
+              setMessages((prev) => [...prev.slice(-49), msg]);
+            }
+          } catch {}
         });
 
         es.onerror = () => {
@@ -765,24 +764,8 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
     const msg = chatInput.trim();
     setChatInput('');
 
-    if (webinar?.mode === 'semi_live') {
-      // Semi-Live: Broadcast chat via REST so all attendees receive it via SSE
-      await webinarApi.sendChat(webinar.joinCode || '', 'Host', msg).catch(() => {});
-    } else {
-      // Fully-Live: Broadcast via MediaSoup Data Channel (future)
-      const myMsg: ChatMessage = {
-        id: Date.now().toString(),
-        user: 'You (Host)',
-        avatar: 'H',
-        message: msg,
-        time: new Date(),
-        isHost: true,
-      };
-      setMessages((prev) => [...prev, myMsg]);
-
-      // MediaSoup: data channel messaging would be added here if supported
-      console.log('Fully-Live chat sent locally', msg);
-    }
+    // Broadcast chat via REST so all attendees receive it via SSE in both modes
+    await webinarApi.sendChat(webinar?.joinCode || '', 'Host', msg).catch(() => {});
   }, [chatInput, connectionState, webinar]);
 
   // ── End webinar session ────────────────────────────────────────────────────

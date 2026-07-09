@@ -468,7 +468,8 @@ export class WebinarsController {
     const name     = displayName?.trim() || 'Viewer';
 
     const write = (event: { type: string; data: Record<string, unknown>; timestamp: number }) => {
-      reply.raw.write(`event: ${event.type}\ndata: ${JSON.stringify(event.data)}\nid: ${event.timestamp}\n\n`);
+      const payload = { type: event.type, ...event.data };
+      reply.raw.write(`event: message\ndata: ${JSON.stringify(payload)}\nid: ${event.timestamp}\n\n`);
     };
 
     const close = () => { try { reply.raw.end(); } catch {} };
@@ -545,7 +546,7 @@ export class WebinarsController {
   ) {
     const webinar = await this.webinarsService.findByJoinCode(code);
     const sent = this.sse.broadcast(webinar.id, {
-      type: 'chat',
+      type: 'message',
       data: {
         user:    body.displayName?.trim() || 'Viewer',
         message: String(body.message ?? '').substring(0, 500),
