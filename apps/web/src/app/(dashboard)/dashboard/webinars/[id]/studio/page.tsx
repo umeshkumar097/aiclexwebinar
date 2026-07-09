@@ -290,6 +290,8 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
             audio: { noiseSuppression: true, echoCancellation: true },
           });
 
+          localFallbackStreamRef.current = stream;
+
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
             videoRef.current.muted = true;
