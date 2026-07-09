@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth.store';
 import { webinarApi, type Webinar } from '@/lib/api';
 import { Device } from 'mediasoup-client';
-import type { Transport, Producer } from 'mediasoup-client';
+import type { Transport, Producer } from 'mediasoup-client/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDuration(seconds: number) {
@@ -107,7 +107,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
   // Live stats
   const [elapsed, setElapsed] = useState(0);
   const [participantCount, setParticipantCount] = useState(0);
-  const [viewers, setViewers] = useState<Viewer[]>([]);
+  const [viewers, _setViewers] = useState<Viewer[]>([]);
 
   // Chat
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -1234,7 +1234,9 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
               // Already live — show mic/cam controls for the live room
               <>
                 <CtrlBtn icon={micOn ? '🎙' : '🔇'} label={micOn ? 'Mute' : 'Unmute'} active={micOn} onClick={() => {
-                  void takeoverRoomRef.current?.localParticipant.setMicrophoneEnabled(!micOn);
+                  if (audioProducerRef.current) {
+                    micOn ? audioProducerRef.current.pause() : audioProducerRef.current.resume();
+                  }
                   setMicOn(v => !v);
                 }} />
                 <CtrlBtn icon={'📹'} label={'Cam On'} active={true} onClick={() => {}} />

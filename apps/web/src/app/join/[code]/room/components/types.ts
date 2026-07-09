@@ -63,4 +63,5 @@ export type HostEvent =
   | { type: 'poll_vote'; pollId: string; optionId: string; user: string }
   | { type: 'host_mute'; targetSid: string; muted: boolean }
   | { type: 'raise_hand'; user: string; raised: boolean }
-  | { type: 'spotlight'; targetSid: string | null };
+  | { type: 'spotlight'; targetSid: string | null }
+  | { type: 'session_end' };

@@ -109,10 +109,13 @@ export default function JoinPage({
       watchUrl.searchParams.set('polls', s.enablePolls !== false ? '1' : '0');
       router.push(watchUrl.pathname + watchUrl.search);
     } else {
+      // fully_live mode — pass MediaSoup credentials to room page
       const roomUrl = new URL(`/join/${normalCode}/room`, window.location.origin);
-      roomUrl.searchParams.set('token', result.token);
+      roomUrl.searchParams.set('roomId', result.roomId);
+      roomUrl.searchParams.set('peerId', result.peerId);
+      roomUrl.searchParams.set('serverUrl', result.mediasoupServerUrl);
+      roomUrl.searchParams.set('secret', result.mediasoupSecret);
       roomUrl.searchParams.set('name', name);
-      roomUrl.searchParams.set('url', result.livekitUrl);
       if (result.webinarTitle) roomUrl.searchParams.set('title', result.webinarTitle);
       roomUrl.searchParams.set('watermark', s.enableWatermark ? '1' : '0');
       roomUrl.searchParams.set('chat', s.enableChat !== false ? '1' : '0');

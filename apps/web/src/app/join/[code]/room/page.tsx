@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, use, useCallback } from 'react';
 import { Device } from 'mediasoup-client';
-import type { Transport, Consumer } from 'mediasoup-client/lib/types';
+import type { Transport, Consumer } from 'mediasoup-client/types';
 import { ChatTab }              from './components/ChatTab';
 import { QnATab }               from './components/QnATab';
 import { PollsTab }             from './components/PollsTab';
@@ -447,7 +447,7 @@ export default function AttendeeRoomPage({
     };
     setMessages((p) => [...p.slice(-199), m]);
     try {
-      await webinarApi.sendAttendeeMessage(code, displayName, msg);
+      await webinarApi.sendChat(code, displayName, msg);
     } catch { /* fire-and-forget */ }
   }, [displayName, code]);
 

@@ -158,20 +158,14 @@ export default function WatchPage({
     webinarApi.getAttendeeToken(code, displayName)
       .then((data) => {
         if (data.mode === 'fully_live') {
-          const room = new Room({ adaptiveStream: true });
-          takeoverRoomRef.current = room;
-          room.on(RoomEvent.TrackSubscribed, (track) => {
-            if (track.kind === Track.Kind.Video && liveVideoRef.current) {
-              track.attach(liveVideoRef.current);
-              liveVideoRef.current.play().catch(() => {});
-            }
-          });
-          room.on(RoomEvent.Connected, () => {
-            setVideoError(false);
-            setIsTakenOver(true);
-            setTakingOver(false);
-          });
-          return room.connect(data.livekitUrl, data.token);
+          // MediaSoup takeover: redirect to room page
+          const roomUrl = new URL(`/join/${code}/room`, window.location.origin);
+          roomUrl.searchParams.set('roomId', data.roomId);
+          roomUrl.searchParams.set('peerId', data.peerId);
+          roomUrl.searchParams.set('serverUrl', data.mediasoupServerUrl);
+          roomUrl.searchParams.set('secret', data.mediasoupSecret);
+          roomUrl.searchParams.set('name', displayName);
+          window.location.href = roomUrl.pathname + roomUrl.search;
         }
       })
       .catch(() => {});
@@ -189,19 +183,14 @@ export default function WatchPage({
       webinarApi.getAttendeeToken(code, displayName)
         .then((data) => {
           if (data.mode === 'fully_live') {
-            const room = new Room({ adaptiveStream: true });
-            takeoverRoomRef.current = room;
-            room.on(RoomEvent.TrackSubscribed, (track) => {
-              if (track.kind === Track.Kind.Video && liveVideoRef.current) {
-                track.attach(liveVideoRef.current);
-                liveVideoRef.current.play().catch(() => {});
-              }
-            });
-            room.on(RoomEvent.Connected, () => {
-              setIsTakenOver(true);
-              setTakingOver(false);
-            });
-            return room.connect(data.livekitUrl, data.token);
+            // MediaSoup takeover: redirect to room page
+            const roomUrl = new URL(`/join/${code}/room`, window.location.origin);
+            roomUrl.searchParams.set('roomId', data.roomId);
+            roomUrl.searchParams.set('peerId', data.peerId);
+            roomUrl.searchParams.set('serverUrl', data.mediasoupServerUrl);
+            roomUrl.searchParams.set('secret', data.mediasoupSecret);
+            roomUrl.searchParams.set('name', displayName);
+            window.location.href = roomUrl.pathname + roomUrl.search;
           }
           setSessionEnded(true);
         })
@@ -290,7 +279,7 @@ export default function WatchPage({
     });
 
     es.addEventListener('takeover_start', (e: MessageEvent) => {
-      const d = JSON.parse(e.data) as { livekitUrl: string; roomName: string };
+      JSON.parse(e.data); // parse but not needed for MediaSoup redirect
       setTakingOver(true);
       setShowReplayModal(false);
 
@@ -328,9 +317,15 @@ export default function WatchPage({
       webinarApi.getAttendeeToken(code, displayName)
         .then((data) => {
           if (data.mode === 'fully_live') {
-            return room.connect(data.livekitUrl, data.token);
+            // MediaSoup: redirect to room page for takeover
+            const roomUrl = new URL(`/join/${code}/room`, window.location.origin);
+            roomUrl.searchParams.set('roomId', data.roomId);
+            roomUrl.searchParams.set('peerId', data.peerId);
+            roomUrl.searchParams.set('serverUrl', data.mediasoupServerUrl);
+            roomUrl.searchParams.set('secret', data.mediasoupSecret);
+            roomUrl.searchParams.set('name', displayName);
+            window.location.href = roomUrl.pathname + roomUrl.search;
           }
-          return room.connect(d.livekitUrl, d.roomName);
         })
         .catch(() => setTakingOver(false));
     });
