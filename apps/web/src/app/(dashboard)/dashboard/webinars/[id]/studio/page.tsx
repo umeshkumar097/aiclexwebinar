@@ -177,47 +177,52 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
           setElapsed(Math.floor((Date.now() - new Date(w.startedAt).getTime()) / 1000));
         }
 
-        if (w.mode === 'semi_live') {
-          // ── Semi-Live: Connect via SSE to monitor chat/viewers ──
-          setConnectionState('connecting');
-          const es = webinarApi.openEventStream(w.joinCode || '', 'Host');
-          esRef.current = es;
+        // ── Connect via SSE to monitor chat/viewers (needed in both modes) ──
+        const es = webinarApi.openEventStream(w.joinCode || '', 'Host');
+        esRef.current = es;
 
-          es.addEventListener('connected', () => {
+        es.addEventListener('connected', () => {
+          if (w.mode === 'semi_live') {
             setConnectionState('connected');
-          });
+          }
+        });
 
-          es.addEventListener('viewer_count', (e: MessageEvent) => {
-            const d = JSON.parse(e.data) as { count: number };
-            setParticipantCount(d.count);
-          });
+        es.addEventListener('viewer_count', (e: MessageEvent) => {
+          const d = JSON.parse(e.data) as { count: number };
+          setParticipantCount(d.count);
+        });
 
-          es.addEventListener('chat', (e: MessageEvent) => {
-            const d = JSON.parse(e.data) as { user: string; message: string; time: string };
-            // Filter out vote messages from general chat
-            if (d.message.startsWith('__vote__')) {
-              try {
-                const vote = JSON.parse(d.message.replace('__vote__', '')) as { pollId: string; optionId: string };
-                // Handle live poll result updates on Host control panel
-                console.log('Received vote:', vote);
-              } catch {}
-              return;
-            }
+        es.addEventListener('chat', (e: MessageEvent) => {
+          const d = JSON.parse(e.data) as { user: string; message: string; time: string };
+          // Filter out vote messages from general chat
+          if (d.message.startsWith('__vote__')) {
+            try {
+              const vote = JSON.parse(d.message.replace('__vote__', '')) as { pollId: string; optionId: string };
+              // Handle live poll result updates on Host control panel
+              console.log('Received vote:', vote);
+            } catch {}
+            return;
+          }
 
-            const msg: ChatMessage = {
-              id: `${Date.now()}-${Math.random()}`,
-              user: d.user,
-              avatar: d.user.substring(0, 2).toUpperCase(),
-              message: d.message,
-              time: new Date(d.time),
-              isHost: d.user.toLowerCase().includes('host'),
-            };
-            setMessages((prev) => [...prev.slice(-49), msg]);
-          });
+          const msg: ChatMessage = {
+            id: `${Date.now()}-${Math.random()}`,
+            user: d.user,
+            avatar: d.user.substring(0, 2).toUpperCase(),
+            message: d.message,
+            time: new Date(d.time),
+            isHost: d.user.toLowerCase().includes('host'),
+          };
+          setMessages((prev) => [...prev.slice(-49), msg]);
+        });
 
-          es.onerror = () => setConnectionState('error');
+        es.onerror = () => {
+          if (w.mode === 'semi_live') {
+            setConnectionState('error');
+          }
+        };
+
+        if (w.mode === 'semi_live') {
           setPageLoading(false);
-
         } else {
           // ── Fully-Live: Connect via MediaSoup WebRTC ──
           setConnectionState('connecting');

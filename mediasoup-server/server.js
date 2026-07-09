@@ -410,6 +410,8 @@ app.post('/api/rooms/:roomId/transports/:transportId/consume', requireSecret, as
       room.consumers.delete(consumer.id);
     });
 
+    console.log(`[consume] Created consumer: ${consumer.id} for peer: ${peerId} | kind: ${consumer.kind}`);
+
     res.json({
       id: consumer.id,
       producerId,
@@ -432,6 +434,7 @@ app.post('/api/rooms/:roomId/consumers/:consumerId/resume', requireSecret, async
     if (!consumer) return res.status(404).json({ error: 'Consumer not found' });
 
     await consumer.resume();
+    console.log(`[consume] Resumed consumer: ${req.params.consumerId} (${consumer.kind})`);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
