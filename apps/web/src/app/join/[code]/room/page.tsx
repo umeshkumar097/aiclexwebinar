@@ -166,20 +166,24 @@ export default function AttendeeRoomPage({
 
     es.addEventListener('chat', (e: MessageEvent) => {
       try {
-        const d = JSON.parse(e.data) as { user: string; message: string; time: string; isHost?: boolean };
+        const d = JSON.parse(e.data) as { id?: string; user: string; message: string; time: string; isHost?: boolean };
         // Handle reactions sent via chat channel
         if (d.message.startsWith('__reaction__')) {
           const emoji = d.message.replace('__reaction__', '');
           setIncomingRxn({ emoji, id: `${Date.now()}-${Math.random()}` });
           return;
         }
-        setMessages((p) => [...p.slice(-199), {
-          id: `${Date.now()}-${Math.random()}`,
-          user: d.user,
-          message: d.message,
-          time: new Date(d.time),
-          isHost: d.isHost,
-        }]);
+        setMessages((p) => {
+          if (d.id && p.some((m) => m.id === d.id)) return p;
+          return [...p.slice(-199), {
+            id: d.id || `${Date.now()}-${Math.random()}`,
+            user: d.user,
+            message: d.message,
+            time: new Date(d.time),
+            isHost: d.isHost,
+            isMe: d.user === displayName && !d.isHost,
+          }];
+        });
       } catch {}
     });
 
@@ -231,6 +235,57 @@ export default function AttendeeRoomPage({
       } catch {}
     });
 
+    es.addEventListener('poll_vote', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { pollId: string; optionId: string; user: string };
+        setPolls((p) => p.map((poll) =>
+          poll.id === d.pollId
+            ? {
+                ...poll,
+                totalVotes: poll.totalVotes + 1,
+                options: poll.options.map((o) =>
+                  o.id === d.optionId ? { ...o, votes: o.votes + 1 } : o
+                ),
+              }
+            : poll
+        ));
+      } catch {}
+    });
+
+    es.addEventListener('qa_action', (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data) as { type: 'submit' | 'upvote'; data: any };
+        if (payload.type === 'submit') {
+          const q = payload.data as { id: string; user: string; question: string; time: string };
+          const qObj = {
+            id: q.id,
+            user: q.user,
+            question: q.question,
+            time: new Date(q.time),
+            upvotes: 0,
+          };
+          setQuestions((prev) => {
+            if (prev.some((x) => x.id === q.id)) return prev;
+            return [...prev, qObj];
+          });
+        } else if (payload.type === 'upvote') {
+          const qId = payload.data.id as string;
+          setQuestions((prev) =>
+            prev.map((q) => (q.id === qId ? { ...q, upvotes: q.upvotes + 1 } : q))
+          );
+        }
+      } catch {}
+    });
+
+    es.addEventListener('hand_toggle', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { user: string; raised: boolean };
+        if (d.user === displayName) {
+          setHandRaised(d.raised);
+        }
+      } catch {}
+    });
+
     es.addEventListener('cta_show', (e: MessageEvent) => {
       try {
         const d = JSON.parse(e.data) as { cta: CTAData };
@@ -261,6 +316,36 @@ export default function AttendeeRoomPage({
     });
 
     es.addEventListener('session_ended', () => {
+      console.log('Webinar session ended, cleaning up resources...');
+      // 1. Stop all video/audio tracks in elements (if any) to turn off camera LED
+      if (videoRef.current?.srcObject instanceof MediaStream) {
+        videoRef.current.srcObject.getTracks().forEach((track) => {
+          track.stop();
+        });
+        videoRef.current.srcObject = null;
+      }
+      if (audioRef.current?.srcObject instanceof MediaStream) {
+        audioRef.current.srcObject.getTracks().forEach((track) => {
+          track.stop();
+        });
+        audioRef.current.srcObject = null;
+      }
+
+      // 2. Close MediaSoup consumers
+      consumersRef.current.forEach((c) => {
+        try { c.close(); } catch {}
+      });
+      consumersRef.current.clear();
+
+      // 3. Close MediaSoup transport
+      try { transportRef.current?.close(); } catch {}
+      transportRef.current = null;
+
+      // 4. Close EventSource
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+
+      // 5. Update state to trigger end screen
       setSessionEnded(true);
     });
 
@@ -273,6 +358,7 @@ export default function AttendeeRoomPage({
       eventSourceRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [code, displayName]);
 
   // ── MediaSoup connection ──────────────────────────────────────────────────
@@ -488,8 +574,10 @@ export default function AttendeeRoomPage({
 
   /** Send chat via backend broadcast API (SSE fan-out) */
   const sendChat = useCallback(async (msg: string) => {
+    // Add locally and optimistically (so it's instant)
+    const localId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const m: ChatMsg = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: localId,
       user: displayName,
       message: msg,
       time: new Date(),
@@ -497,7 +585,7 @@ export default function AttendeeRoomPage({
     };
     setMessages((p) => [...p.slice(-199), m]);
     try {
-      await webinarApi.sendChat(code, displayName, msg);
+      await webinarApi.sendChat(code, displayName, msg, localId);
     } catch { /* fire-and-forget */ }
   }, [displayName, code]);
 
@@ -509,19 +597,31 @@ export default function AttendeeRoomPage({
   }, [code, displayName]);
 
   const sendQuestion = useCallback((q: string) => {
-    const question: QnAQuestion = {
-      id: `${Date.now()}-${Math.random()}`,
+    const qId = `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const question = {
+      id: qId,
       user: displayName,
       question: q,
-      time: new Date(),
-      upvotes: 0,
+      time: new Date().toISOString(),
     };
-    setQuestions((p) => [...p, question]);
-  }, [displayName]);
+
+    // Optimistically update local Q&A panel
+    setQuestions((p) => [...p, {
+      id: question.id,
+      user: question.user,
+      question: question.question,
+      time: new Date(question.time),
+      upvotes: 0,
+    }]);
+
+    // Broadcast to everyone
+    webinarApi.sendQAAction(code, 'submit', question).catch(() => {});
+  }, [displayName, code]);
 
   const upvoteQuestion = useCallback((id: string) => {
     setQuestions((p) => p.map((q) => q.id === id && !q.hasUpvoted ? { ...q, upvotes: q.upvotes + 1, hasUpvoted: true } : q));
-  }, []);
+    webinarApi.sendQAAction(code, 'upvote', { id }).catch(() => {});
+  }, [code]);
 
   const votePoll = useCallback((pollId: string, optionId: string) => {
     setPolls((p) => p.map((poll) =>
@@ -530,7 +630,13 @@ export default function AttendeeRoomPage({
             options: poll.options.map((o) => o.id === optionId ? { ...o, votes: o.votes + 1 } : o) }
         : poll,
     ));
-  }, []);
+
+    // Send vote to server
+    webinarApi.sendPollVote(code, pollId, optionId, displayName).catch(() => {});
+
+    // Broadcast vote inside general chat for host's panel parsing
+    webinarApi.sendChat(code, displayName, `__vote__${JSON.stringify({ pollId, optionId })}`).catch(() => {});
+  }, [code, displayName]);
 
   const togglePiP = useCallback(async () => {
     if (!videoRef.current) return;
@@ -548,30 +654,6 @@ export default function AttendeeRoomPage({
     setSidePanel((prev) => (prev === tab ? null : tab));
   }, []);
 
-  const handleMoreAction = useCallback((action: string) => {
-    if (action === 'notes') { setSidePanel('notes'); return; }
-    if (action === 'leave') { window.history.back(); }
-  }, []);
-
-  // F-032: Raise / lower hand
-  const toggleRaiseHand = useCallback(() => {
-    const next = !handRaised;
-    setHandRaised(next);
-    // Auto-lower after 30 seconds
-    if (handTimeoutRef.current) clearTimeout(handTimeoutRef.current);
-    if (next) {
-      handTimeoutRef.current = setTimeout(() => setHandRaised(false), 30000);
-    }
-  }, [handRaised]);
-
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (handTimeoutRef.current) clearTimeout(handTimeoutRef.current);
-      if (annTimerRef.current) clearTimeout(annTimerRef.current);
-    };
-  }, []);
-
   // ── Leave handler ─────────────────────────────────────────────────────────
   const handleLeave = useCallback(() => {
     if (pollProducersRef.current) clearInterval(pollProducersRef.current);
@@ -580,6 +662,35 @@ export default function AttendeeRoomPage({
     try { transportRef.current?.close(); } catch { /* ignore */ }
     eventSourceRef.current?.close();
     window.history.back();
+  }, []);
+
+  const handleMoreAction = useCallback((action: string) => {
+    if (action === 'notes') { setSidePanel('notes'); return; }
+    if (action === 'leave') { handleLeave(); }
+  }, [handleLeave]);
+
+  // F-032: Raise / lower hand
+  const toggleRaiseHand = useCallback(() => {
+    const next = !handRaised;
+    setHandRaised(next);
+    // Send status to server
+    webinarApi.sendHand(code, displayName, next).catch(() => {});
+    // Auto-lower after 30 seconds
+    if (handTimeoutRef.current) clearTimeout(handTimeoutRef.current);
+    if (next) {
+      handTimeoutRef.current = setTimeout(() => {
+        setHandRaised(false);
+        webinarApi.sendHand(code, displayName, false).catch(() => {});
+      }, 30000);
+    }
+  }, [handRaised, code, displayName]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (handTimeoutRef.current) clearTimeout(handTimeoutRef.current);
+      if (annTimerRef.current) clearTimeout(annTimerRef.current);
+    };
   }, []);
 
   // ── Session ended overlay (host ended the webinar) ───────────────────────

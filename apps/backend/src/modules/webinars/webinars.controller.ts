@@ -580,18 +580,75 @@ export class WebinarsController {
   @HttpCode(HttpStatus.OK)
   async attendeeChat(
     @Param('code') code: string,
-    @Body() body: { displayName: string; message: string },
+    @Body() body: { displayName: string; message: string; messageId?: string },
   ) {
     const webinar = await this.webinarsService.findByJoinCode(code);
     const sent = this.sse.broadcast(webinar.id, {
       type: 'chat',
       data: {
+        id:      body.messageId || `${Date.now()}-${Math.random()}`,
         user:    body.displayName?.trim() || 'Viewer',
         message: String(body.message ?? '').substring(0, 500),
         time:    new Date().toISOString(),
       },
     });
     return { success: true, data: { sent } };
+  }
+
+  // POST /api/v1/webinars/join/:code/hand (public — attendee raises/lowers hand)
+  @Post('join/:code/hand')
+  @HttpCode(HttpStatus.OK)
+  async attendeeHand(
+    @Param('code') code: string,
+    @Body() body: { displayName: string; raised: boolean },
+  ) {
+    const webinar = await this.webinarsService.findByJoinCode(code);
+    this.sse.broadcast(webinar.id, {
+      type: 'hand_toggle',
+      data: {
+        user: body.displayName,
+        raised: body.raised,
+        time: new Date().toISOString(),
+      },
+    });
+    return { success: true };
+  }
+
+  // POST /api/v1/webinars/join/:code/poll/vote (public — attendee votes on active poll)
+  @Post('join/:code/poll/vote')
+  @HttpCode(HttpStatus.OK)
+  async attendeePollVote(
+    @Param('code') code: string,
+    @Body() body: { pollId: string; optionId: string; displayName: string },
+  ) {
+    const webinar = await this.webinarsService.findByJoinCode(code);
+    this.sse.broadcast(webinar.id, {
+      type: 'poll_vote',
+      data: {
+        pollId: body.pollId,
+        optionId: body.optionId,
+        user: body.displayName,
+      },
+    });
+    return { success: true };
+  }
+
+  // POST /api/v1/webinars/join/:code/qa (public — attendee submits/upvotes Q&A)
+  @Post('join/:code/qa')
+  @HttpCode(HttpStatus.OK)
+  async attendeeQA(
+    @Param('code') code: string,
+    @Body() body: { type: 'submit' | 'upvote'; data: any },
+  ) {
+    const webinar = await this.webinarsService.findByJoinCode(code);
+    this.sse.broadcast(webinar.id, {
+      type: 'qa_action',
+      data: {
+        type: body.type,
+        data: body.data,
+      },
+    });
+    return { success: true };
   }
 
   // GET /api/v1/webinars/:id/viewers  (host — live viewer list)

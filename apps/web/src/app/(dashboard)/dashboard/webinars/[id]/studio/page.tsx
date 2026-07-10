@@ -34,6 +34,33 @@ interface Viewer {
   joinedAt: Date;
 }
 
+// ─── Floating Reactions Helper ────────────────────────────────────────────────
+interface FloatingEmoji { id: string; emoji: string; x: number }
+function EmojiReactionsOverlay({ incoming }: { incoming: { emoji: string; id: string } | null }) {
+  const [floating, setFloating] = useState<FloatingEmoji[]>([]);
+  useEffect(() => {
+    if (!incoming) return;
+    const fe: FloatingEmoji = { id: incoming.id, emoji: incoming.emoji, x: 10 + Math.random() * 80 };
+    setFloating((prev) => [...prev.slice(-20), fe]);
+    setTimeout(() => setFloating((prev) => prev.filter((f) => f.id !== fe.id)), 3000);
+  }, [incoming]);
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden z-10">
+      {floating.map((f) => (
+        <div key={f.id} className="absolute bottom-24 text-3xl" style={{ left: `${f.x}%`, animation: 'floatUp 3s ease-out forwards' }}>
+          {f.emoji}
+        </div>
+      ))}
+      <style>{`
+        @keyframes floatUp {
+          0%   { transform: translateY(0) scale(1);   opacity: 1; }
+          100% { transform: translateY(-280px) scale(0.4); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ─── Control Button ───────────────────────────────────────────────────────────
 function CtrlBtn({ icon, label, active = true, danger = false, onClick, disabled = false }: {
   icon: string; label: string; active?: boolean; danger?: boolean; onClick: () => void; disabled?: boolean;
@@ -157,6 +184,13 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
   const [spotlightSid, setSpotlightSid]   = useState<string | null>(null);
   const [mutedSids, setMutedSids]         = useState<Set<string>>(new Set());
   const [raisedHands, setRaisedHands]     = useState<Set<string>>(new Set()); // F-032
+  const [incomingRxn, setIncomingRxn]     = useState<{ emoji: string; id: string } | null>(null);
+  const [currentPoll, setCurrentPoll]     = useState<{
+    id: string;
+    question: string;
+    options: { id: string; text: string; votes: number }[];
+    totalVotes: number;
+  } | null>(null);
 
   // ── Load webinar + connect MediaSoup / SSE ───────────────────────────────────
   useEffect(() => {
@@ -206,25 +240,37 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
         es.addEventListener('chat', (e: MessageEvent) => {
           try {
-            const d = JSON.parse(e.data) as { user: string; message: string; time: string };
-            // Filter out vote messages from general chat
+            const d = JSON.parse(e.data) as { id?: string; user: string; message: string; time: string };
+            // Parse and handle vote events
             if (d.message.startsWith('__vote__')) {
               try {
                 const vote = JSON.parse(d.message.replace('__vote__', '')) as { pollId: string; optionId: string };
-                // Handle live poll result updates on Host control panel
-                console.log('Received vote:', vote);
+                setCurrentPoll((prev) => {
+                  if (!prev || prev.id !== vote.pollId) return prev;
+                  return {
+                    ...prev,
+                    totalVotes: prev.totalVotes + 1,
+                    options: prev.options.map((o) =>
+                      o.id === vote.optionId ? { ...o, votes: o.votes + 1 } : o
+                    ),
+                  };
+                });
               } catch {}
               return;
             }
 
-            // Filter out reaction messages
-            if (d.message.startsWith('__reaction__')) return;
+            // Parse and handle reaction events
+            if (d.message.startsWith('__reaction__')) {
+              const emoji = d.message.replace('__reaction__', '');
+              setIncomingRxn({ emoji, id: `${Date.now()}-${Math.random()}` });
+              return;
+            }
 
             // Skip host's own messages — already added optimistically in sendMessage
             if (d.user === 'Host') return;
 
             const msg: ChatMessage = {
-              id: `${Date.now()}-${Math.random()}`,
+              id: d.id || `${Date.now()}-${Math.random()}`,
               user: d.user,
               avatar: d.user.substring(0, 2).toUpperCase(),
               message: d.message,
@@ -232,6 +278,34 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
               isHost: false,
             };
             setMessages((prev) => [...prev.slice(-49), msg]);
+          } catch {}
+        });
+
+        es.addEventListener('hand_toggle', (e: MessageEvent) => {
+          try {
+            const d = JSON.parse(e.data) as { user: string; raised: boolean };
+            setRaisedHands((prev) => {
+              const next = new Set(prev);
+              if (d.raised) next.add(d.user);
+              else next.delete(d.user);
+              return next;
+            });
+          } catch {}
+        });
+
+        es.addEventListener('poll_vote', (e: MessageEvent) => {
+          try {
+            const d = JSON.parse(e.data) as { pollId: string; optionId: string; user: string };
+            setCurrentPoll((prev) => {
+              if (!prev || prev.id !== d.pollId) return prev;
+              return {
+                ...prev,
+                totalVotes: prev.totalVotes + 1,
+                options: prev.options.map((o) =>
+                  o.id === d.optionId ? { ...o, votes: o.votes + 1 } : o
+                ),
+              };
+            });
           } catch {}
         });
 
@@ -966,6 +1040,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
     await webinarApi.broadcast(id, 'poll_start', pollData);
     setActivePollId(pollId);
+    setCurrentPoll(pollData);
     alert('Poll started!');
   };
 
@@ -973,6 +1048,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
     if (!activePollId) return;
     await webinarApi.broadcast(id, 'poll_end', { pollId: activePollId });
     setActivePollId(null);
+    setCurrentPoll(null);
     alert('Poll ended!');
   };
 
@@ -1070,6 +1146,7 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
         {/* Stage */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 relative overflow-hidden flex items-center justify-center" style={{ background: '#1C1C1C' }}>
+            <EmojiReactionsOverlay incoming={incomingRxn} />
             {isSemi ? (
               // ── Semi-Live stage ──
               <>
@@ -1606,13 +1683,30 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
                 {/* Poll Control */}
                 <div className="space-y-2">
                   <h4 className="font-semibold text-foreground border-b border-slate-200 pb-1">Poll Controller</h4>
-                  {activePollId ? (
-                    <div className="space-y-2 bg-blue-50 border border-blue-200 p-3 rounded-xl">
+                  {activePollId && currentPoll ? (
+                    <div className="space-y-3 bg-blue-50 border border-blue-200 p-4 rounded-xl text-slate-800">
                       <p className="font-bold text-blue-700">Poll is active! 📊</p>
-                      <p className="text-[10px] text-foreground">Attendees can see and vote in real-time.</p>
+                      <p className="text-xs font-semibold text-slate-900">{currentPoll.question}</p>
+                      <div className="space-y-2 mt-2">
+                        {currentPoll.options.map((opt) => {
+                          const pct = currentPoll.totalVotes > 0 ? Math.round((opt.votes / currentPoll.totalVotes) * 100) : 0;
+                          return (
+                            <div key={opt.id} className="text-[11px]">
+                              <div className="flex justify-between font-medium text-slate-700 mb-0.5">
+                                <span>{opt.text}</span>
+                                <span>{opt.votes} votes ({pct}%)</span>
+                              </div>
+                              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[9px] text-slate-400 mt-1">Total votes: {currentPoll.totalVotes}</p>
                       <button
                         onClick={endPoll}
-                        className="w-full py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors mt-2"
+                        className="w-full py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors mt-2 text-xs"
                       >End Current Poll</button>
                     </div>
                   ) : (

@@ -431,10 +431,31 @@ export const webinarApi = {
     }),
 
   /** Attendee sends chat message via REST → broadcasts via SSE */
-  sendChat: (code: string, displayName: string, message: string) =>
+  sendChat: (code: string, displayName: string, message: string, messageId?: string) =>
     request<{ sent: number }>(`/webinars/join/${code}/chat`, {
       method: 'POST',
-      body: JSON.stringify({ displayName, message }),
+      body: JSON.stringify({ displayName, message, messageId }),
+    }),
+
+  /** Attendee toggles raise hand state */
+  sendHand: (code: string, displayName: string, raised: boolean) =>
+    request<void>(`/webinars/join/${code}/hand`, {
+      method: 'POST',
+      body: JSON.stringify({ displayName, raised }),
+    }),
+
+  /** Attendee votes on poll */
+  sendPollVote: (code: string, pollId: string, optionId: string, displayName: string) =>
+    request<void>(`/webinars/join/${code}/poll/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ pollId, optionId, displayName }),
+    }),
+
+  /** Attendee Q&A action (submit/upvote) */
+  sendQAAction: (code: string, type: 'submit' | 'upvote', data: any) =>
+    request<void>(`/webinars/join/${code}/qa`, {
+      method: 'POST',
+      body: JSON.stringify({ type, data }),
     }),
 
   /**
