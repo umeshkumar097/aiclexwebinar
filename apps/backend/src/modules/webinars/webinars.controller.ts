@@ -398,7 +398,7 @@ export class WebinarsController {
   }
 
   // ── POST /api/v1/webinars/:id/recording-upload-url ──────────────────────
-  // Returns a presigned R2 PUT URL for LiveKit recording storage
+  // Returns a presigned R2/MinIO PUT URL for recording storage (CORS must be configured)
   @Post(':id/recording-upload-url')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -418,6 +418,45 @@ export class WebinarsController {
     );
     return { success: true, data: result };
   }
+
+  // ── POST /api/v1/webinars/:id/upload-recording ───────────────────────────
+  // Proxy recording upload: browser sends file → backend uploads to storage
+  // This avoids CORS issues when MinIO is only accessible internally
+  @Post(':id/upload-recording')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async uploadRecordingProxy(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: FastifyRequest,
+  ) {
+    await this.webinarsService.findOne(id, user.userId, user.orgId ?? null);
+
+    const data = await (req as any).file();
+    if (!data) throw new Error('No file received');
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of data.file) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+
+    const result = await this.r2.uploadBuffer(
+      'recordings',
+      id,
+      data.filename ?? 'recording.webm',
+      data.mimetype ?? 'video/webm',
+      buffer,
+    );
+
+    // Save replayUrl to the webinar
+    await this.webinarsService.update(id, user.userId, user.orgId ?? null, {
+      replayUrl: result.publicUrl,
+    });
+
+    return { success: true, data: result };
+  }
+
 
   // ── POST /api/v1/webinars/:id/image-upload-url ───────────────────────────
   // Returns a presigned R2 PUT URL so the host can upload an image directly

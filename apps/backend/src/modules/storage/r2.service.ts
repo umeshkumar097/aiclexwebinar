@@ -18,17 +18,36 @@ export class R2Service {
   private readonly publicUrl: string;
 
   constructor() {
-    const accountId   = process.env.R2_ACCOUNT_ID        ?? '';
-    const accessKeyId = process.env.R2_ACCESS_KEY_ID     ?? '';
-    const secretKey   = process.env.R2_SECRET_ACCESS_KEY ?? '';
-    this.bucket       = process.env.R2_BUCKET_NAME       ?? 'zonvowebinar';
-    this.publicUrl    = process.env.R2_PUBLIC_URL         ?? '';
+    const minioEndpoint = process.env.MINIO_ENDPOINT ?? '';
+    const accountId     = process.env.R2_ACCOUNT_ID        ?? '';
+    const accessKeyId   = process.env.R2_ACCESS_KEY_ID     ?? (process.env.MINIO_ACCESS_KEY ?? '');
+    const secretKey     = process.env.R2_SECRET_ACCESS_KEY ?? (process.env.MINIO_SECRET_KEY ?? '');
+    this.bucket         = process.env.R2_BUCKET_NAME       ?? 'zonvo-recordings-private';
+    this.publicUrl      = process.env.R2_PUBLIC_URL        ?? '';
 
-    this.client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId, secretAccessKey: secretKey },
-    });
+    if (minioEndpoint) {
+      // Use MinIO (S3-compatible) — resolve internal docker hostname to public URL for presigned URLs
+      const minioPublicEndpoint = process.env.MINIO_PUBLIC_ENDPOINT ?? minioEndpoint;
+      this.client = new S3Client({
+        region: 'us-east-1',
+        endpoint: minioEndpoint,
+        credentials: { accessKeyId, secretAccessKey: secretKey },
+        forcePathStyle: true,
+      });
+      // For presigned URLs, we must use the public-facing endpoint so browser can reach it
+      if (!this.publicUrl && minioPublicEndpoint) {
+        this.publicUrl = `${minioPublicEndpoint}/${this.bucket}`;
+      }
+      this.logger.log(`Storage: MinIO @ ${minioEndpoint}`);
+    } else {
+      // Use Cloudflare R2
+      this.client = new S3Client({
+        region: 'auto',
+        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+        credentials: { accessKeyId, secretAccessKey: secretKey },
+      });
+      this.logger.log(`Storage: Cloudflare R2 bucket=${this.bucket}`);
+    }
   }
 
   // ── Build public URL for a file key ────────────────────────────────────────

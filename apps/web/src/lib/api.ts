@@ -386,6 +386,22 @@ export const webinarApi = {
       { method: 'POST', body: JSON.stringify({ filename, contentType }) },
     ),
 
+  /** Proxy recording upload — sends blob directly to backend (avoids MinIO CORS issues) */
+  uploadRecording: async (id: string, blob: Blob, filename: string): Promise<{ fileKey: string; publicUrl: string }> => {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') ?? '' : '';
+    const formData = new FormData();
+    formData.append('file', blob, filename);
+    const res = await fetch(`${backendUrl}/api/v1/webinars/${id}/upload-recording`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+    const json = await res.json() as { success: boolean; data: { fileKey: string; publicUrl: string } };
+    return json.data;
+  },
+
   /** Presigned R2 upload URL for images (thumbnails) */
   getImageUploadUrl: (id: string, filename: string, contentType: string) =>
     request<{ uploadUrl: string; fileKey: string; publicUrl: string }>(

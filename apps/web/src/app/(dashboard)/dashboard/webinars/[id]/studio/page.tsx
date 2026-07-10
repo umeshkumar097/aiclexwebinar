@@ -842,26 +842,19 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
         try {
           const blob = new Blob(recordedChunksRef.current, { type: mimeType || 'video/webm' });
           const filename = `recording_${Date.now()}.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`;
-          const contentType = mimeType || 'video/webm';
 
-          const { uploadUrl, publicUrl } = await webinarApi.getRecordingUploadUrl(id, filename, contentType);
-
-          const uploadRes = await fetch(uploadUrl, {
-            method: 'PUT',
-            headers: { 'Content-Type': contentType },
-            body: blob,
-          });
-          if (!uploadRes.ok) throw new Error(`Upload status ${uploadRes.status}`);
-
-          await webinarApi.update(id, { replayUrl: publicUrl });
+          // Use proxy upload — sends file via backend to avoid MinIO CORS restrictions
+          const result = await webinarApi.uploadRecording(id, blob, filename);
           alert("Recording saved and published as Replay successfully!");
+          console.log('Recording uploaded:', result.publicUrl);
         } catch (err) {
           console.error(err);
-          alert("Failed to upload recording file.");
+          alert("Failed to upload recording file. Please try again.");
         } finally {
           setUploadingRecording(false);
         }
       };
+
 
       mediaRecorder.start(1000);
       setRecording(true);
