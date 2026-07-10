@@ -164,12 +164,22 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
 
     async function init() {
       try {
-        const w = await webinarApi.get(id);
+        let w = await webinarApi.get(id);
         if (cancelled) return;
 
+        // Auto-start if not live yet (Zoom-style: opening studio starts the webinar)
         if (w.status !== 'live') {
-          router.replace(`/dashboard/webinars/${id}`);
-          return;
+          try {
+            w = await webinarApi.goLive(id);
+          } catch {
+            // If goLive fails (already live or error), reload to check status
+            w = await webinarApi.get(id);
+          }
+          if (cancelled) return;
+          if (w.status !== 'live') {
+            router.replace(`/dashboard/webinars/${id}`);
+            return;
+          }
         }
 
         setWebinar(w);

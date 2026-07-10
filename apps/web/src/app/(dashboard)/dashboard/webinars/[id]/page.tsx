@@ -165,17 +165,26 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  const handleGoLive = async () => {
+  const handleStartWebinar = async () => {
     setActionLoading(true);
     try {
-      const updated = await webinarApi.goLive(id);
-      setWebinar(updated);
-      showToast('🔴 Webinar is now LIVE!', 'success');
+      // Step 1: Go Live (if not already live)
+      if (webinar?.status !== 'live') {
+        const updated = await webinarApi.goLive(id);
+        setWebinar(updated);
+      }
+      // Step 2: Open studio in a NEW TAB — Zoom style
+      window.open(`/dashboard/webinars/${id}/studio`, '_blank', 'noopener');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to go live', 'error');
-    } finally {
+      showToast(err instanceof Error ? err.message : 'Failed to start webinar', 'error');
       setActionLoading(false);
+      return;
     }
+    setActionLoading(false);
+  };
+
+  const handleOpenStudio = () => {
+    window.open(`/dashboard/webinars/${id}/studio`, '_blank', 'noopener');
   };
 
   const handleEndLive = async () => {
@@ -288,23 +297,32 @@ export default function WebinarDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Actions */}
           <div className="flex items-center gap-2 flex-wrap">
-            {webinar.status === 'draft' || webinar.status === 'scheduled' ? (
+            {(webinar.status === 'draft' || webinar.status === 'scheduled') && (
               <ActionButton
-                label="Go Live"
-                icon="🔴"
-                onClick={() => void handleGoLive()}
+                label="Start Webinar"
+                icon="🚀"
+                onClick={() => void handleStartWebinar()}
                 variant="live"
                 loading={actionLoading}
               />
-            ) : null}
+            )}
             {webinar.status === 'live' && (
-              <ActionButton
-                label="End Session"
-                icon="⏹"
-                onClick={() => void handleEndLive()}
-                variant="danger"
-                loading={actionLoading}
-              />
+              <>
+                <ActionButton
+                  label="Open Studio"
+                  icon="🎙"
+                  onClick={handleOpenStudio}
+                  variant="primary"
+                  loading={false}
+                />
+                <ActionButton
+                  label="End Session"
+                  icon="⏹"
+                  onClick={() => void handleEndLive()}
+                  variant="danger"
+                  loading={actionLoading}
+                />
+              </>
             )}
             <ActionButton
               label="Delete"
