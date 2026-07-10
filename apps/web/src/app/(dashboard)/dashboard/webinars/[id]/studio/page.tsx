@@ -207,13 +207,19 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
               return;
             }
 
+            // Filter out reaction messages
+            if (d.message.startsWith('__reaction__')) return;
+
+            // Skip host's own messages — already added optimistically in sendMessage
+            if (d.user === 'Host') return;
+
             const msg: ChatMessage = {
               id: `${Date.now()}-${Math.random()}`,
               user: d.user,
               avatar: d.user.substring(0, 2).toUpperCase(),
               message: d.message,
               time: new Date(d.time),
-              isHost: d.user.toLowerCase().includes('host'),
+              isHost: false,
             };
             setMessages((prev) => [...prev.slice(-49), msg]);
           } catch {}
@@ -293,17 +299,27 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
             } catch (err) { errback(err as Error); }
           });
 
-          // ── Capture camera + mic ──
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 1280, height: 720 },
-            audio: { noiseSuppression: true, echoCancellation: true },
-          });
+          // ── Capture camera + mic (try 720p, fallback to 480p) ──
+          let stream: MediaStream;
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+              audio: { noiseSuppression: true, echoCancellation: true },
+            });
+          } catch {
+            // Fallback to lower resolution if 720p fails
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 640 }, height: { ideal: 480 } },
+              audio: true,
+            });
+          }
 
           localFallbackStreamRef.current = stream;
 
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
             videoRef.current.muted = true;
+            videoRef.current.play().catch(() => {});
           }
 
           // ── Produce video ──
@@ -504,6 +520,11 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
     const newState = !cameraOn;
     if (videoProducerRef.current) {
       newState ? videoProducerRef.current.resume() : videoProducerRef.current.pause();
+    }
+    // Also toggle the track enabled state so camera light turns off
+    const stream = videoRef.current?.srcObject as MediaStream | null;
+    if (stream) {
+      stream.getVideoTracks().forEach((t) => { t.enabled = newState; });
     }
     setCameraOn(newState);
   }, [cameraOn]);
@@ -768,6 +789,17 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
     if (!chatInput.trim()) return;
     const msg = chatInput.trim();
     setChatInput('');
+
+    // Optimistically add to local chat immediately (SSE echo will be deduplicated)
+    const localMsg = {
+      id: `host-${Date.now()}-${Math.random()}`,
+      user: 'Host',
+      avatar: 'HO',
+      message: msg,
+      time: new Date(),
+      isHost: true,
+    };
+    setMessages((prev) => [...prev.slice(-49), localMsg]);
 
     // Broadcast chat via REST so all attendees receive it via SSE in both modes
     await webinarApi.sendChat(webinar?.joinCode || '', 'Host', msg).catch(() => {});

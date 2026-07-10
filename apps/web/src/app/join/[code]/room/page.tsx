@@ -167,6 +167,12 @@ export default function AttendeeRoomPage({
     es.addEventListener('chat', (e: MessageEvent) => {
       try {
         const d = JSON.parse(e.data) as { user: string; message: string; time: string; isHost?: boolean };
+        // Handle reactions sent via chat channel
+        if (d.message.startsWith('__reaction__')) {
+          const emoji = d.message.replace('__reaction__', '');
+          setIncomingRxn({ emoji, id: `${Date.now()}-${Math.random()}` });
+          return;
+        }
         setMessages((p) => [...p.slice(-199), {
           id: `${Date.now()}-${Math.random()}`,
           user: d.user,
@@ -428,9 +434,12 @@ export default function AttendeeRoomPage({
               });
             }
 
-            // Mark host as offline if no video producers
+            // Mark host as offline only if no video producers AND no active video consumer
             const hasVideo = producers.some((p) => p.kind === 'video');
-            if (!hasVideo) setHostOnline(false);
+            const hasActiveVideoConsumer = Array.from(consumersRef.current.values()).some(
+              (c) => c.kind === 'video' && !c.closed
+            );
+            if (!hasVideo && !hasActiveVideoConsumer) setHostOnline(false);
 
           } catch { /* ignore poll errors */ }
         };
@@ -493,8 +502,11 @@ export default function AttendeeRoomPage({
   }, [displayName, code]);
 
   const sendReaction = useCallback((emoji: string) => {
+    // Show locally immediately
     setIncomingRxn({ emoji, id: `${Date.now()}-${Math.random()}` });
-  }, []);
+    // Broadcast to all attendees via backend SSE (fire and forget)
+    webinarApi.sendChat(code, displayName, `__reaction__${emoji}`).catch(() => {});
+  }, [code, displayName]);
 
   const sendQuestion = useCallback((q: string) => {
     const question: QnAQuestion = {
