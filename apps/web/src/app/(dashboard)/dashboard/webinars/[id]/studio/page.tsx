@@ -452,6 +452,30 @@ export default function LiveStudioPage({ params }: { params: Promise<{ id: strin
     };
   }, [id, router, user]);
 
+  // Poll live viewers list (host only)
+  useEffect(() => {
+    if (connectionState !== 'connected') return;
+
+    const pollViewers = async () => {
+      try {
+        const res = await webinarApi.getViewers(id);
+        const activeViewers = res.viewers.map(v => ({
+          sid: v.id,
+          name: v.displayName,
+          joinedAt: new Date(v.joinedAt)
+        }));
+        _setViewers(activeViewers);
+        setParticipantCount(res.count);
+      } catch (err) {
+        console.error('Failed to poll viewers:', err);
+      }
+    };
+
+    void pollViewers();
+    const interval = setInterval(pollViewers, 5000);
+    return () => clearInterval(interval);
+  }, [id, connectionState]);
+
   // ── Timer ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!webinar) return;

@@ -117,6 +117,9 @@ export default function JoinPage({
       roomUrl.searchParams.set('secret', result.mediasoupSecret);
       roomUrl.searchParams.set('name', name);
       if (result.webinarTitle) roomUrl.searchParams.set('title', result.webinarTitle);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const hostName = (result as any).hostName;
+      if (hostName) roomUrl.searchParams.set('hostName', hostName);
       roomUrl.searchParams.set('watermark', s.enableWatermark ? '1' : '0');
       roomUrl.searchParams.set('chat', s.enableChat !== false ? '1' : '0');
       roomUrl.searchParams.set('polls', s.enablePolls !== false ? '1' : '0');

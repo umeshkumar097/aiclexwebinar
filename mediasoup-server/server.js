@@ -205,6 +205,12 @@ app.use(cors({
 
 app.use(express.json());
 
+// Prevent browser and proxy caching of dynamic signaling state
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  next();
+});
+
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
 function requireSecret(req, res, next) {
   const secret = req.headers['x-mediasoup-secret'] || req.query.secret;
@@ -274,9 +280,14 @@ app.post('/api/rooms/:roomId/transports', requireSecret, async (req, res) => {
     const { peerId, direction = 'send' } = req.body;
     const room = await getOrCreateRoom(req.params.roomId);
 
+    const transportOptions = getWebRtcTransportOptions();
     const transport = await room.router.createWebRtcTransport({
-      ...getWebRtcTransportOptions(),
-      appData: { peerId, direction },
+      ...transportOptions,
+      appData: {
+        ...transportOptions.appData,
+        peerId,
+        direction,
+      },
     });
 
     // Track peer

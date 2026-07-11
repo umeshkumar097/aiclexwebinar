@@ -120,6 +120,7 @@ export class WebinarsService {
   async findByJoinCode(joinCode: string): Promise<Webinar> {
     const webinar = await this.webinarRepo.findOne({
       where: { joinCode: joinCode.toUpperCase() },
+      relations: ['host', 'host.profile'],
     });
     if (!webinar) throw new NotFoundException('Webinar not found. Check your join code.');
     return webinar;
@@ -282,7 +283,7 @@ export class WebinarsService {
     displayName: string,
     password?: string,
   ): Promise<
-    | { mode: 'fully_live'; roomId: string; peerId: string; mediasoupServerUrl: string; mediasoupSecret: string; webinarTitle: string; settings: any }
+    | { mode: 'fully_live'; roomId: string; peerId: string; mediasoupServerUrl: string; mediasoupSecret: string; webinarTitle: string; hostName: string; settings: any }
     | { mode: 'semi_live'; videoUrl: string; currentPositionSeconds: number; timedEvents: unknown[]; webinarTitle: string; webinarId: string; settings: any }
   > {
     const webinar = await this.findByJoinCode(joinCode);
@@ -318,6 +319,16 @@ export class WebinarsService {
     const mediasoupServerUrl = process.env.MEDIASOUP_SERVER_URL ?? 'http://4.236.163.156:2000';
     const mediasoupSecret    = process.env.MEDIASOUP_API_SECRET  ?? 'zonvo_mediasoup_secret_2024';
 
+    let hostName = 'Host';
+    if (webinar.host) {
+      if (webinar.host.profile) {
+        hostName = `${webinar.host.profile.firstName} ${webinar.host.profile.lastName}`.trim();
+      }
+      if (!hostName) {
+        hostName = webinar.host.email.split('@')[0];
+      }
+    }
+
     return {
       mode: 'fully_live' as const,
       roomId,
@@ -325,6 +336,7 @@ export class WebinarsService {
       mediasoupServerUrl,
       mediasoupSecret,
       webinarTitle: webinar.title,
+      hostName,
       settings: webinar.settings ?? {},
     };
   }

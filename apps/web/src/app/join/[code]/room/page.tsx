@@ -21,7 +21,7 @@ function fmt(sec: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-type SidePanelTab = 'chat' | 'qna' | 'polls' | 'notes' | 'more' | null;
+type SidePanelTab = 'chat' | 'participants' | 'qna' | 'polls' | 'notes' | 'more' | null;
 
 // ─── Network quality bars (simple 1-4 bar display) ────────────────────────────
 function NetBars({ quality }: { quality: 'good' | 'poor' | null }) {
@@ -44,6 +44,7 @@ function NetBars({ quality }: { quality: 'good' | 'poor' | null }) {
 // ─── Panel nav items ──────────────────────────────────────────────────────────
 const PANEL_TABS = [
   { id: 'chat'  as const, icon: '💬', label: 'Chat'  },
+  { id: 'participants' as const, icon: '👥', label: 'People' },
   { id: 'qna'   as const, icon: '🙋', label: 'Q&A'   },
   { id: 'polls' as const, icon: '📊', label: 'Polls' },
   { id: 'notes' as const, icon: '📝', label: 'Notes' },
@@ -69,13 +70,15 @@ export default function AttendeeRoomPage({
     peerId?: string;
     serverUrl?: string;
     secret?: string;
+    hostName?: string;
   }>;
 }) {
   const { code }                    = use(params);
-  const { name, title, watermark, chat, polls: pollsOpt, roomId, peerId, serverUrl, secret } = use(searchParams);
+  const { name, title, watermark, chat, polls: pollsOpt, roomId, peerId, serverUrl, secret, hostName } = use(searchParams);
 
   const displayName  = name ?? 'Attendee';
   const webinarTitle = title ?? 'Live Webinar';
+  const hostDisplayName = hostName ?? 'Host';
 
   // ── Refs ─────────────────────────────────────────────────────────────────
   const deviceRef    = useRef<Device | null>(null);
@@ -91,6 +94,7 @@ export default function AttendeeRoomPage({
   // ── Connection state ──────────────────────────────────────────────────────
   const [connState, setConnState] = useState<'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error'>('connecting');
   const [hostOnline, setHostOnline]         = useState(false);
+  const [participantCount, setParticipantCount] = useState(1);
 
   const [elapsed, setElapsed]               = useState(0);
   const [netQuality, setNetQuality]         = useState<'good' | 'poor' | null>(null);
@@ -163,6 +167,20 @@ export default function AttendeeRoomPage({
 
     const es = webinarApi.openEventStream(code, displayName);
     eventSourceRef.current = es;
+
+    es.addEventListener('connected', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { viewerCount: number };
+        setParticipantCount(d.viewerCount);
+      } catch {}
+    });
+
+    es.addEventListener('viewer_count', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data) as { count: number };
+        setParticipantCount(d.count);
+      } catch {}
+    });
 
     es.addEventListener('chat', (e: MessageEvent) => {
       try {
@@ -806,19 +824,19 @@ export default function AttendeeRoomPage({
 
           {/* Waiting for host */}
           {!hostOnline && connState === 'connected' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'linear-gradient(160deg, #0a0a14 0%, #0d0d1a 100%)' }}>
-              <div className="relative w-24 h-24 mb-5">
-                <div className="absolute inset-0 rounded-full animate-ping" style={{ background: 'rgba(29,111,232,0.15)', animationDuration: '2.5s' }} />
-                <div className="absolute inset-2 rounded-full animate-ping" style={{ background: 'rgba(29,111,232,0.1)', animationDuration: '2.5s', animationDelay: '0.5s' }} />
-                <div className="relative w-full h-full rounded-full flex items-center justify-center text-4xl" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(29,111,232,0.3)', boxShadow: '0 0 40px rgba(29,111,232,0.15)' }}>🎙</div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ background: '#1C1C1C' }}>
+              <div className="w-24 h-24 rounded-full flex items-center justify-center text-4xl font-black text-white" style={{ background: '#2a2a2a' }}>
+                {hostDisplayName.charAt(0).toUpperCase()}
               </div>
-              <p className="font-bold text-lg mb-1" style={{ color: 'rgba(255,255,255,0.85)' }}>{webinarTitle}</p>
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>Waiting for host to start camera…</p>
-              <div className="flex gap-1 mt-4">
-                {[0,1,2].map((i) => <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#1d6fe8', animationDelay: `${i * 0.2}s` }} />)}
-              </div>
+              <p className="text-white font-bold text-2xl mt-5 tracking-wide">{hostDisplayName}</p>
+              <p className="text-white/40 text-xs mt-2">Waiting for host to start camera…</p>
             </div>
           )}
+
+          {/* Host Name Label (bottom-left of video stage) */}
+          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded text-white text-xs font-semibold select-none z-20">
+            {hostDisplayName}
+          </div>
 
           {/* Connecting */}
           {connState === 'connecting' && (
@@ -1075,6 +1093,37 @@ export default function AttendeeRoomPage({
             {/* Panel body */}
             <div className="flex-1 overflow-hidden flex flex-col">
               {sidePanel === 'chat'  && <ChatTab  messages={messages} onSend={(m) => void sendChat(m)} onReact={(e) => sendReaction(e)} displayName={displayName} pinnedId={pinnedId} />}
+              {sidePanel === 'participants' && (
+                <div className="flex flex-col h-full overflow-hidden p-4">
+                  <div className="flex-shrink-0 flex items-center justify-between mb-4 pb-2 border-b border-white/10">
+                    <p className="text-white font-semibold text-sm">Participants</p>
+                    <span className="text-xs text-white/40">{participantCount} in webinar</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin">
+                    {/* Host */}
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10">
+                      <div className="w-7 h-7 rounded-full bg-[#0B5CFF] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                        {hostDisplayName.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 truncate">
+                        <p className="text-white text-xs font-medium truncate">{hostDisplayName}</p>
+                        <p className="text-white/40 text-[10px]">Host, Broadcaster</p>
+                      </div>
+                    </div>
+
+                    {/* You (Attendee) */}
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10">
+                      <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                        {displayName.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 truncate">
+                        <p className="text-white text-xs font-medium truncate">{displayName} (You)</p>
+                        <p className="text-white/40 text-[10px]">Attendee</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {sidePanel === 'qna'   && <QnATab   questions={questions} onAsk={(q) => sendQuestion(q)} onUpvote={upvoteQuestion} displayName={displayName} />}
               {sidePanel === 'polls' && <PollsTab polls={polls} onVote={(pid, oid) => votePoll(pid, oid)} />}
               {sidePanel === 'notes' && <NotesPanel webinarCode={code} />}

@@ -503,6 +503,10 @@ export class WebinarsController {
       'X-Accel-Buffering': 'no', // disable nginx buffering
     });
 
+    // Disable idle timeout and enable TCP keep-alive on the raw Node socket
+    reply.raw.socket?.setTimeout(0);
+    reply.raw.socket?.setKeepAlive(true);
+
     const clientId = uuidv4();
     const name     = displayName?.trim() || 'Viewer';
 

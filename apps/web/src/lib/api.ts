@@ -464,7 +464,12 @@ export const webinarApi = {
    * Bypasses the Next.js proxy directly to backend (SSE needs streaming).
    */
   openEventStream: (code: string, displayName: string): EventSource => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
+    let backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
+    if (typeof window !== 'undefined') {
+      if (window.location.hostname.endsWith('zonvo.tech')) {
+        backendUrl = 'https://api.webinar.zonvo.tech';
+      }
+    }
     const url = new URL(`${backendUrl}/api/v1/webinars/join/${code}/events`);
     url.searchParams.set('name', displayName);
     return new EventSource(url.toString(), { withCredentials: true });
