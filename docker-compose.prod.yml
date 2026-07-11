@@ -114,6 +114,8 @@ services:
       target: production
     container_name: zonvo_worker_prod
     restart: always
+    healthcheck:
+      disable: true
     environment:
       NODE_ENV: production
       DB_HOST: postgres
